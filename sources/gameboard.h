@@ -43,7 +43,7 @@ Assets InitializeAsset(char *folder);
 char *ConcatString(char *folder, char *path);
 void LoadTextureFromPath(char *folder, char *path, Texture *texture);
 
-void DrawChessBoard(const BitBoard *bitboard, const Assets *assets, const GameBoard *board);
+void DrawChessBoard(const BitBoard *bitboard, const Assets *assets, const GameBoard *board, bool Drag, int8_t draggedPos, Vector2 draggedPiecePos);
 void DrawPossibleMoves(const GameBoard *board, const uint64_t posMoves, Color color);
 void DrawPossibleCaptures(const GameBoard *board, const uint64_t posCaptures, Color color);
 void DrawMouseClick(const GameBoard *board, int8_t Cell, char Piece, uint64_t *pieceMoveset, Color highlight);

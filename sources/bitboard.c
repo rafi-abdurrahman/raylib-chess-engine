@@ -307,14 +307,15 @@ void PieceCapture(BitBoard *board, int8_t start, int8_t target)
     }
 }
 
-void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, char Piece)
+void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos)
 {
     possiblePos[0] = 0ULL;
-    if(Piece == '.')
+    if (!IS_BIT(board->wPosition, square) && !IS_BIT(board->bPosition, square))
         return;
 
     // ------------------------- WPAWN --------------------------
-    if(Piece == 'P'){
+    if (IS_BIT(board->wPawn, square))
+    {
         if(square + 8 < 64 && !IS_BIT(board->wPosition, square + 8) && !IS_BIT(board->bPosition, square + 8))
             SET_BIT(possiblePos[0], square + 8);
 
@@ -339,7 +340,7 @@ void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, cha
     // ------------------------- WPAWN --------------------------
 
     // ------------------------- BPAWN --------------------------
-    if (Piece == 'p')
+    if (IS_BIT(board->bPawn, square))
     {
         if (square - 8 >= 0 && !IS_BIT(board->bPosition, square - 8) && !IS_BIT(board->wPosition, square - 8))
             SET_BIT(possiblePos[0], square - 8);
@@ -366,15 +367,16 @@ void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, cha
 
     // -------------------------- ROOK --------------------------
     // And Queen (Partially)
-    if(Piece == 'R' || Piece == 'Q' || Piece == 'r' || Piece == 'q'){
+    if (IS_BIT(board->wRook, square) || IS_BIT(board->wQueen, square) || IS_BIT(board->bRook, square) || IS_BIT(board->bQueen, square))
+    {
         // UP
         for (int8_t i = square + 8; i < 64; i += 8){
             if (!IS_BIT(board->wPosition, i) && !IS_BIT(board->bPosition, i))
                 SET_BIT(possiblePos[0], i);
             
             // Search possible captures
-            else if (((Piece == 'R' || Piece == 'Q') && IS_BIT(board->bPosition, i)) ||
-                     ((Piece == 'r' || Piece == 'q') && IS_BIT(board->wPosition, i)))
+            else if (((IS_BIT(board->wRook, square) || IS_BIT(board->wQueen, square)) && IS_BIT(board->bPosition, i)) ||
+                     ((IS_BIT(board->bRook, square) || IS_BIT(board->bQueen, square)) && IS_BIT(board->wPosition, i)))
             {
                 SET_BIT(possiblePos[1], i);
                 break;
@@ -389,8 +391,8 @@ void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, cha
                 SET_BIT(possiblePos[0], i);
 
             // Search possible captures
-            else if (((Piece == 'R' || Piece == 'Q') && IS_BIT(board->bPosition, i)) ||
-                     ((Piece == 'r' || Piece == 'q') && IS_BIT(board->wPosition, i)))
+            else if (((IS_BIT(board->wRook, square) || IS_BIT(board->wQueen, square)) && IS_BIT(board->bPosition, i)) ||
+                     ((IS_BIT(board->bRook, square) || IS_BIT(board->bQueen, square)) && IS_BIT(board->wPosition, i)))
             {
                 SET_BIT(possiblePos[1], i);
                 break;
@@ -407,8 +409,8 @@ void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, cha
                 SET_BIT(possiblePos[0], i);
 
             // Search possible captures
-            else if (((Piece == 'R' || Piece == 'Q') && IS_BIT(board->bPosition, i)) ||
-                     ((Piece == 'r' || Piece == 'q') && IS_BIT(board->wPosition, i)))
+            else if (((IS_BIT(board->wRook, square) || IS_BIT(board->wQueen, square)) && IS_BIT(board->bPosition, i)) ||
+                     ((IS_BIT(board->bRook, square) || IS_BIT(board->bQueen, square)) && IS_BIT(board->wPosition, i)))
             {
                 SET_BIT(possiblePos[1], i);
                 break;
@@ -425,8 +427,8 @@ void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, cha
                 SET_BIT(possiblePos[0], i);
 
             // Search possible captures
-            else if (((Piece == 'R' || Piece == 'Q') && IS_BIT(board->bPosition, i)) ||
-                     ((Piece == 'r' || Piece == 'q') && IS_BIT(board->wPosition, i)))
+            else if (((IS_BIT(board->wRook, square) || IS_BIT(board->wQueen, square)) && IS_BIT(board->bPosition, i)) ||
+                     ((IS_BIT(board->bRook, square) || IS_BIT(board->bQueen, square)) && IS_BIT(board->wPosition, i)))
             {
                 SET_BIT(possiblePos[1], i);
                 break;
@@ -436,13 +438,14 @@ void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, cha
                 break;
         }
 
-        if(Piece == 'R' || Piece == 'r')
+        if (IS_BIT(board->wRook, square) || IS_BIT(board->bRook, square))
             return;
     }
     // -------------------------- ROOK --------------------------
 
     // ------------------------- KNIGHT -------------------------
-    if(Piece == 'N' || Piece == 'n'){
+    if (IS_BIT(board->wKnight, square) || IS_BIT(board->bKnight, square))
+    {
         // UP RIGHT
         if ((square + 17 < 64) && (square + 17) / 8 == (square / 8) + 2 && !IS_BIT(board->bPosition, square + 17) && !IS_BIT(board->wPosition, square + 17))
         {
@@ -485,7 +488,8 @@ void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, cha
         }
 
         // Search possible Captures
-        if(Piece == 'N'){
+        if (IS_BIT(board->wKnight, square))
+        {
             // UP RIGHT
             if ((square + 17 < 64) && (square + 17) / 8 == (square / 8) + 2 && IS_BIT(board->bPosition, square + 17))
             {
@@ -575,7 +579,7 @@ void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, cha
 
     // ------------------------- BISHOP -------------------------
     // And Queen (Partially)
-    if (Piece == 'B' || Piece == 'Q' || Piece == 'b' || Piece == 'q')
+    if (IS_BIT(board->wBishop, square) || IS_BIT(board->wQueen, square) || IS_BIT(board->bBishop, square) || IS_BIT(board->bQueen, square))
     {
         // UP RIGHT
         for (int8_t i = square + 9; i < 64 && i%8 != 0; i += 9){
@@ -583,8 +587,8 @@ void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, cha
                 SET_BIT(possiblePos[0], i);
 
             // Search possible captures
-            else if (((Piece == 'B' || Piece == 'Q') && IS_BIT(board->bPosition, i)) ||
-                     ((Piece == 'b' || Piece == 'q') && IS_BIT(board->wPosition, i)))
+            else if (((IS_BIT(board->wBishop, square) || IS_BIT(board->wQueen, square)) && IS_BIT(board->bPosition, i)) ||
+                     ((IS_BIT(board->bBishop, square) || IS_BIT(board->bQueen, square)) && IS_BIT(board->wPosition, i)))
             {
                 SET_BIT(possiblePos[1], i);
                 break;
@@ -600,8 +604,8 @@ void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, cha
                 SET_BIT(possiblePos[0], i);
 
             // Search possible captures
-            else if (((Piece == 'B' || Piece == 'Q') && IS_BIT(board->bPosition, i)) ||
-                     ((Piece == 'b' || Piece == 'q') && IS_BIT(board->wPosition, i)))
+            else if (((IS_BIT(board->wBishop, square) || IS_BIT(board->wQueen, square)) && IS_BIT(board->bPosition, i)) ||
+                     ((IS_BIT(board->bBishop, square) || IS_BIT(board->bQueen, square)) && IS_BIT(board->wPosition, i)))
             {
                 SET_BIT(possiblePos[1], i);
                 break;
@@ -617,8 +621,8 @@ void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, cha
                 SET_BIT(possiblePos[0], i);
 
             // Search possible captures
-            else if (((Piece == 'B' || Piece == 'Q') && IS_BIT(board->bPosition, i)) ||
-                     ((Piece == 'b' || Piece == 'q') && IS_BIT(board->wPosition, i)))
+            else if (((IS_BIT(board->wBishop, square) || IS_BIT(board->wQueen, square)) && IS_BIT(board->bPosition, i)) ||
+                     ((IS_BIT(board->bBishop, square) || IS_BIT(board->bQueen, square)) && IS_BIT(board->wPosition, i)))
             {
                 SET_BIT(possiblePos[1], i);
                 break;
@@ -634,8 +638,8 @@ void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, cha
                 SET_BIT(possiblePos[0], i);
 
             // Search possible captures
-            else if (((Piece == 'B' || Piece == 'Q') && IS_BIT(board->bPosition, i)) ||
-                     ((Piece == 'b' || Piece == 'q') && IS_BIT(board->wPosition, i)))
+            else if (((IS_BIT(board->wBishop, square) || IS_BIT(board->wQueen, square)) && IS_BIT(board->bPosition, i)) ||
+                     ((IS_BIT(board->bBishop, square) || IS_BIT(board->bQueen, square)) && IS_BIT(board->wPosition, i)))
             {
                 SET_BIT(possiblePos[1], i);
                 break;
@@ -650,7 +654,7 @@ void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, cha
     // ------------------------- BISHOP -------------------------
 
     // ------------------------- WKING --------------------------
-    if (Piece == 'K')
+    if (IS_BIT(board->wKing, square))
     {
         // Castling to right Rook
         if(board->wCastled && IS_BIT(board->wRook, 7)){
@@ -717,7 +721,7 @@ void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, cha
     // ------------------------- WKING --------------------------
 
     // ------------------------- BKING --------------------------
-    if (Piece == 'k')
+    if (IS_BIT(board->bKing, square))
     {
         // Castling to right Rook
         if (board->bCastled && IS_BIT(board->bRook, 63))

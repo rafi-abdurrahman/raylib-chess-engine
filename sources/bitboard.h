@@ -88,7 +88,7 @@ uint64_t *GetCurrentPieceEx(BitBoard *board, int8_t square);
 void PieceMove(BitBoard* board, int8_t start, int8_t target);
 void PieceCapture(BitBoard* board, int8_t start, int8_t target);
 
-void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, char Piece);
+void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos);
 void GetPossibleCaptures(BitBoard *board, int8_t square, uint64_t *possiblePos, char Piece);
 
 #endif

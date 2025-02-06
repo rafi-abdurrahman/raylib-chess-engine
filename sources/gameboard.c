@@ -90,7 +90,9 @@ Assets InitializeAsset(char* folder){
     return assets;
 }
 
-void DrawChessBoard(const BitBoard *bitboard, const Assets *assets, const GameBoard *board){
+void DrawChessBoard(const BitBoard *bitboard, const Assets *assets, const GameBoard *board,
+                    bool Drag, int8_t draggedPiece, Vector2 draggedPiecePos)
+{
     DrawText(bitboard->playerTurn ? "White's Turn" : "Black's Turn",
              board->CenterX - (assets->boardTexture.width * 2),
              board->CenterY - (assets->boardTexture.height * 2),
@@ -98,6 +100,8 @@ void DrawChessBoard(const BitBoard *bitboard, const Assets *assets, const GameBo
 
     for (uint8_t i = 0; i < 64; i++)
     {
+        if(Drag && i == draggedPiece)
+            continue;
         Texture2D texture;
         if (IS_BIT(bitboard->wPosition, i))
         {
@@ -137,6 +141,44 @@ void DrawChessBoard(const BitBoard *bitboard, const Assets *assets, const GameBo
         DrawTextureEx(texture, (Vector2){board->Grid[i].x + 44 - (float)(texture.width * 2), 
                       board->Grid[i].y + 44 - (float)(texture.height * 2)}, 0.f, 4.f, WHITE);
     }
+
+    if (Drag)
+    {
+        Texture2D texture;
+        if (IS_BIT(bitboard->wPosition, draggedPiece))
+        {
+            if (IS_BIT(bitboard->wPawn, draggedPiece))
+                texture = assets->wPawnTexture;
+            else if (IS_BIT(bitboard->wRook, draggedPiece))
+                texture = assets->wRookTexture;
+            else if (IS_BIT(bitboard->wBishop, draggedPiece))
+                texture = assets->wBishopTexture;
+            else if (IS_BIT(bitboard->wKnight, draggedPiece))
+                texture = assets->wKnightTexture;
+            else if (IS_BIT(bitboard->wQueen, draggedPiece))
+                texture = assets->wQueenTexture;
+            else if (IS_BIT(bitboard->wKing, draggedPiece))
+                texture = assets->wKingTexture;
+        }
+        // Check Black BitBoards
+        else if (IS_BIT(bitboard->bPosition, draggedPiece))
+        {
+            if (IS_BIT(bitboard->bPawn, draggedPiece))
+                texture = assets->bPawnTexture;
+            else if (IS_BIT(bitboard->bRook, draggedPiece))
+                texture = assets->bRookTexture;
+            else if (IS_BIT(bitboard->bBishop, draggedPiece))
+                texture = assets->bBishopTexture;
+            else if (IS_BIT(bitboard->bKnight, draggedPiece))
+                texture = assets->bKnightTexture;
+            else if (IS_BIT(bitboard->bQueen, draggedPiece))
+                texture = assets->bQueenTexture;
+            else if (IS_BIT(bitboard->bKing, draggedPiece))
+                texture = assets->bKingTexture;
+        }
+        DrawTextureEx(texture, draggedPiecePos, .0f, 4.f, WHITE);
+    }
+    
     return;
 }
 
