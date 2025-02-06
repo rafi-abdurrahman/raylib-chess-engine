@@ -2,20 +2,25 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-GameBoard CreateGameBoard(int WindowWidth, int WindowHeight, int GridWidth, int GridHeight)
+GameBoard CreateGameBoard(int WindowWidth, int WindowHeight)
 {
     GameBoard board;
 
     board.windowWidth  =  WindowWidth;
     board.windowHeight =  WindowHeight;
-    board.gridWidth    =  GridWidth;
-    board.gridHeight   =  GridHeight;
     board.CenterX      =  WindowWidth / 2;
     board.CenterY      =  WindowHeight / 2;
-    board.OriginX      =  (board.CenterX) - (4 * GridWidth);
-    board.EndX         =  (board.CenterX) + (4 * GridWidth);
-    board.OriginY      =  (board.CenterY) - (4 * GridHeight);
-    board.EndY         =  (board.CenterY) + (4 * GridHeight);
+
+    int i = 0;
+    for (int y = board.CenterY + 264; y >= board.CenterY - 352; y -= 88)
+    {
+        for (int x = board.CenterX - 352; x < board.CenterX + 352; x += 88)
+        {
+            board.Grid[i] = (Rectangle){x, y, 88, 88};
+            i++;
+        }
+    }
+
     return board;
 }
 
@@ -86,48 +91,75 @@ Assets InitializeAsset(char* folder){
 }
 
 void DrawChessBoard(const BitBoard *bitboard, const Assets *assets, const GameBoard *board){
-    int i = 0;
-    for (int y = board->CenterY + 264; y >= board->CenterY - 352; y -= 88)
+    DrawText(bitboard->playerTurn ? "White's Turn" : "Black's Turn",
+             board->CenterX - (assets->boardTexture.width * 2),
+             board->CenterY - (assets->boardTexture.height * 2),
+             40, bitboard->playerTurn ? WHITE : BLACK);
+
+    for (uint8_t i = 0; i < 64; i++)
     {
-        for (int x = board->CenterX - 352; x < board->CenterX + 352; x += 88)
-        {   
-            Texture2D texture;
-            if (IS_BIT(bitboard->wPosition, i)){
-                if (IS_BIT(bitboard->wPawn, i))
-                    texture = assets->wPawnTexture;
-                else if (IS_BIT(bitboard->wRook, i))
-                    texture = assets->wRookTexture;
-                else if (IS_BIT(bitboard->wBishop, i))
-                    texture = assets->wBishopTexture;
-                else if (IS_BIT(bitboard->wKnight, i))
-                    texture = assets->wKnightTexture;
-                else if (IS_BIT(bitboard->wQueen, i))
-                    texture = assets->wQueenTexture;
-                else if (IS_BIT(bitboard->wKing, i))
-                    texture = assets->wKingTexture;
-            }
-            // Check Black BitBoards
-            else if (IS_BIT(bitboard->bPosition, i)){
-                if (IS_BIT(bitboard->bPawn, i))
-                    texture = assets->bPawnTexture;
-                else if (IS_BIT(bitboard->bRook, i))
-                    texture = assets->bRookTexture;
-                else if (IS_BIT(bitboard->bBishop, i))
-                    texture = assets->bBishopTexture;
-                else if (IS_BIT(bitboard->bKnight, i))
-                    texture = assets->bKnightTexture;
-                else if (IS_BIT(bitboard->bQueen, i))
-                    texture = assets->bQueenTexture;
-                else if (IS_BIT(bitboard->bKing, i))
-                    texture = assets->bKingTexture;
-            }
-            else{
-                i++;
-                continue;
-            }
-            DrawTextureEx(texture, (Vector2){x + 44 - (float)(texture.width * 2), 
-                          y + 44 - (float)(texture.height * 2)}, 0.f, 4.f, WHITE);
-            i++;
+        Texture2D texture;
+        if (IS_BIT(bitboard->wPosition, i))
+        {
+            if (IS_BIT(bitboard->wPawn, i))
+                texture = assets->wPawnTexture;
+            else if (IS_BIT(bitboard->wRook, i))
+                texture = assets->wRookTexture;
+            else if (IS_BIT(bitboard->wBishop, i))
+                texture = assets->wBishopTexture;
+            else if (IS_BIT(bitboard->wKnight, i))
+                texture = assets->wKnightTexture;
+            else if (IS_BIT(bitboard->wQueen, i))
+                texture = assets->wQueenTexture;
+            else if (IS_BIT(bitboard->wKing, i))
+                texture = assets->wKingTexture;
         }
+        // Check Black BitBoards
+        else if (IS_BIT(bitboard->bPosition, i))
+        {
+            if (IS_BIT(bitboard->bPawn, i))
+                texture = assets->bPawnTexture;
+            else if (IS_BIT(bitboard->bRook, i))
+                texture = assets->bRookTexture;
+            else if (IS_BIT(bitboard->bBishop, i))
+                texture = assets->bBishopTexture;
+            else if (IS_BIT(bitboard->bKnight, i))
+                texture = assets->bKnightTexture;
+            else if (IS_BIT(bitboard->bQueen, i))
+                texture = assets->bQueenTexture;
+            else if (IS_BIT(bitboard->bKing, i))
+                texture = assets->bKingTexture;
+        }
+        else
+        {
+            continue;
+        }
+        DrawTextureEx(texture, (Vector2){board->Grid[i].x + 44 - (float)(texture.width * 2), 
+                      board->Grid[i].y + 44 - (float)(texture.height * 2)}, 0.f, 4.f, WHITE);
     }
+    return;
+}
+
+void DrawPossibleMoves(const GameBoard *board, const uint64_t posMoves, Color color)
+{
+    for (uint8_t i = 0; i < 64; i++){
+        if (IS_BIT(posMoves, i))
+            DrawRectangleRec(board->Grid[i], color);
+    }
+}
+
+void DrawPossibleCaptures(const GameBoard *board, const uint64_t posCaptures, Color color)  
+{
+    for (uint8_t i = 0; i < 64; i++)
+    {
+        if (IS_BIT(posCaptures, i))
+            DrawRectangleRec(board->Grid[i], color);
+    }
+}
+
+void DrawMouseClick(const GameBoard *board, int8_t Cell, char Piece, uint64_t *pieceMoveset, Color highlight){
+    if(Cell > -1)
+        DrawRectangleRec(board->Grid[Cell], highlight);
+    DrawPossibleMoves(board, pieceMoveset[0], WHITE);
+    DrawPossibleCaptures(board, pieceMoveset[1], RED);
 }

@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
-
+#include <stdbool.h>
 
 /*
 ############################################## BITBOARD REPRESENTATION ##############################################
@@ -69,25 +69,26 @@ typedef struct BitBoard
     uint64_t bKing;
     uint64_t bPosition;
     // Castle
-    _Bool wCastled;
-    _Bool bCastled;
+    bool wCastled;
+    bool bCastled;
     // En Passant
-    uint8_t enPassant;
+    int8_t enPassant;
     // Game State
-    _Bool wInCheck;
-    _Bool bInCheck;
+    bool playerTurn;
+    bool wInCheck;
+    bool bInCheck;
 } BitBoard;
 
 BitBoard InitBoard(); // Initialize starting positions
 
 void GetCurrentPos(const BitBoard* board, char* posBoard);
-char GetCurrentPiece(const BitBoard *board, uint8_t square);
-uint64_t *GetCurrentPieceEx(BitBoard *board, uint8_t square);
+char GetCurrentPiece(const BitBoard *board, int8_t square);
+uint64_t *GetCurrentPieceEx(BitBoard *board, int8_t square);
 
-void PieceMove(BitBoard* board, uint64_t *Piece, uint8_t start, uint8_t target);
-void PieceCapture(BitBoard* board, uint64_t *Capturer, uint64_t *Captured, uint8_t start, uint8_t target);
+void PieceMove(BitBoard* board, int8_t start, int8_t target);
+void PieceCapture(BitBoard* board, int8_t start, int8_t target);
 
-void GetPossibleMoves(BitBoard *board, uint8_t square, uint64_t *possiblePos, char Piece);
-void GetPossibleCaptures(BitBoard *board, uint8_t square, uint64_t *possiblePos, char Piece);
+void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos, char Piece);
+void GetPossibleCaptures(BitBoard *board, int8_t square, uint64_t *possiblePos, char Piece);
 
 #endif

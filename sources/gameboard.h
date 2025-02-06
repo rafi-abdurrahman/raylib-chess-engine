@@ -12,12 +12,8 @@ typedef struct GameBoard
     int windowHeight;
     int CenterX;
     int CenterY;
-    int gridWidth;
-    int gridHeight;
-    int OriginX;
-    int EndX;
-    int OriginY;
-    int EndY;
+    Rectangle Grid[64];
+
 } GameBoard;
 
 typedef struct Assets{
@@ -41,10 +37,15 @@ typedef struct Assets{
     Texture2D bKingTexture;
 } Assets;
 
-GameBoard CreateGameBoard(int WindowWidth, int WindowHeight, int GridHeight, int GridWidth);
+GameBoard CreateGameBoard(int WindowWidth, int WindowHeight);
+
 Assets InitializeAsset(char *folder);
 char *ConcatString(char *folder, char *path);
 void LoadTextureFromPath(char *folder, char *path, Texture *texture);
+
 void DrawChessBoard(const BitBoard *bitboard, const Assets *assets, const GameBoard *board);
+void DrawPossibleMoves(const GameBoard *board, const uint64_t posMoves, Color color);
+void DrawPossibleCaptures(const GameBoard *board, const uint64_t posCaptures, Color color);
+void DrawMouseClick(const GameBoard *board, int8_t Cell, char Piece, uint64_t *pieceMoveset, Color highlight);
 
 #endif
