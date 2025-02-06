@@ -1,4 +1,3 @@
-- FIX BUG: Move after capture logic!
 - Implement edge cases (en passant / castling)
 - Implement check and checkmate checking
 - Implement possible moves in check

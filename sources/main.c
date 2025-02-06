@@ -70,15 +70,18 @@ int main(){
                     
                     if(IS_BIT(curPiecePosMoveset[0], i)){
                         PieceMove(&bitboard, lastPiecePos, i);
+                        curPiecePosMoveset[0] = 0ULL;
+                        curPiecePosMoveset[1] = 0ULL;
                         bitboard.playerTurn = !bitboard.playerTurn;
                     }
                     else if(IS_BIT(curPiecePosMoveset[1], i))
                     {
                         PieceCapture(&bitboard, lastPiecePos, i);
+                        curPiecePosMoveset[0] = 0ULL;
+                        curPiecePosMoveset[1] = 0ULL;
                         bitboard.playerTurn = !bitboard.playerTurn;
                     }
-
-                    if(curPiece == '.'){
+                    else if(curPiece == '.'){
                         curPiecePosMoveset[0] = 0ULL;
                         curPiecePosMoveset[1] = 0ULL;
                     }
