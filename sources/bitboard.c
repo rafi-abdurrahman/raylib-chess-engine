@@ -1821,7 +1821,7 @@ void ClearIllegalMoves(BitBoard *board){
                             }
                         }
                         bool temp = false;
-                        for (int8_t x = i; x < 64; x++)
+                        for (int8_t x = i; x < (i / 8) * 8; x++)
                         {
                             // If the attacker is right above
                             if (IS_BIT(board->bRook, x) || IS_BIT(board->bQueen, x))
@@ -1835,7 +1835,7 @@ void ClearIllegalMoves(BitBoard *board){
                     }
                     else
                     {
-                        for (int8_t x = wKingPos - 1; x > i-1; x--)
+                        for (int8_t x = wKingPos - 1; x >= (i / 8) * 8; x--)
                         {
                             if (IS_BIT(board->wPosition, x))
                             {
@@ -1997,33 +1997,8 @@ void ClearIllegalMoves(BitBoard *board){
                 continue;
 
             if(board->bCheckMap != 0){
-                if(i == 59){
-                    for (int rank = 7; rank >= 0; rank--)
-                    {
-                        for (int file = 0; file < 8; file++)
-                        {
-                            int square = rank * 8 + file;
-                            uint64_t mask = 1ULL << square;
-                            printf("%c ", (board->bMoveMap[59][1] & mask) ? '1' : '.');
-                        }
-                        printf("\n");
-                    }
-                }
                 board->bMoveMap[i][0] &= board->bCheckMap;  // Remove any moves that is not to block check
                 board->bMoveMap[i][1] &= board->bCheckMap;  // Remove any captures that is not to stop check
-                if (i == 59)
-                {
-                    for (int rank = 7; rank >= 0; rank--)
-                    {
-                        for (int file = 0; file < 8; file++)
-                        {
-                            int square = rank * 8 + file;
-                            uint64_t mask = 1ULL << square;
-                            printf("%c ", (board->bMoveMap[59][1] & mask) ? '1' : '.');
-                        }
-                        printf("\n");
-                    }
-                }
             }
 
             if (IS_BIT(board->wMoveMap[0][0], i - 1))
@@ -2033,6 +2008,8 @@ void ClearIllegalMoves(BitBoard *board){
                 // Vertical
                 if ((i - 1 - bKingPos) % 8 == 0)
                 {
+                    if(i == 60)
+                        printf("im in vertical!\n");
                     if (i - 1 > bKingPos)
                     {
                         for (int8_t x = bKingPos + 8; x < i - 1; x += 8)
@@ -2084,6 +2061,8 @@ void ClearIllegalMoves(BitBoard *board){
                 // Horizontal
                 else if ((i - 1) / 8 == bKingPos / 8)
                 {
+                    if (i == 60)
+                        printf("im in horizontal!\n");
                     if (i - 1 > bKingPos)
                     {
                         for (int8_t x = bKingPos + 1; x < i - 1; x++)
@@ -2095,7 +2074,7 @@ void ClearIllegalMoves(BitBoard *board){
                             }
                         }
                         bool temp = false;
-                        for (int8_t x = i; x < 64; x++)
+                        for (int8_t x = i; x < (i/8) * 8 ; x++)
                         {
                             // If the attacker is right above
                             if (IS_BIT(board->wRook, x) || IS_BIT(board->wQueen, x))
@@ -2109,7 +2088,7 @@ void ClearIllegalMoves(BitBoard *board){
                     }
                     else
                     {
-                        for (int8_t x = bKingPos - 1; x > i - 1; x--)
+                        for (int8_t x = bKingPos - 1; x >= (i / 8) * 8; x--)
                         {   
                             if (IS_BIT(board->bPosition, x))
                             {
@@ -2137,6 +2116,8 @@ void ClearIllegalMoves(BitBoard *board){
                 // Diagonal Right
                 else if ((i - 1 - bKingPos) % 9 == 0)
                 {
+                    if (i == 60)
+                        printf("im in diag right!\n");
                     if (i - 1 > bKingPos)
                     {
                         for (int8_t x = bKingPos + 9; x < i - 1; x += 9)
@@ -2187,6 +2168,8 @@ void ClearIllegalMoves(BitBoard *board){
                 // Diagonal Left
                 else if ((i - 1 - bKingPos) % 7 == 0)
                 {
+                    if (i == 60)
+                        printf("im in diag left!\n");
                     if (i - 1 > bKingPos)
                     {
                         for (int8_t x = bKingPos + 7; x < i - 1; x += 7)
