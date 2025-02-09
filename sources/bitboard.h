@@ -36,47 +36,52 @@ BLACK
 ############################################## BITBOARD REPRESENTATION ##############################################
 */
 
-enum BoardSquare{a1, b1, c1, d1, e1, f1, g1, h1,
-                 a2, b2, c2, d2, e2, f2, g2, h2,
-                 a3, b3, c3, d3, e3, f3, g3, h3,
-                 a4, b4, c4, d4, e4, f4, g4, h4,
-                 a5, b5, c5, d5, e5, f5, g5, h5,
-                 a6, b6, c6, d6, e6, f6, g6, h6,
-                 a7, b7, c7, d7, e7, f7, g7, h7,
-                 a8, b8, c8, d8, e8, f8, g8, h8};
-
 #define SET_BIT(bb, square) ((bb) |= (1ULL << (square)))
 #define CLEAR_BIT(bb, square) ((bb) &= ~(1ULL << (square)))
 #define FLIP_BIT(bb, square) ((bb) ^= (1ULL << (square)))
 #define IS_BIT(bb, square) ((bb) & (1ULL << (square)))
+#define AND_BIT(b1, b2) ((b1) & (b2))
+#define LESS_THAN_BIT(b1, b2, square) ((b1) & (b2 >> square))
+#define MORE_THAN_BIT(b1, b2, square) ((b1) & (b2 << square))
+
+#define wPawn wPieces[1]
+#define wRook wPieces[2]
+#define wKnight wPieces[3]
+#define wBishop wPieces[4]
+#define wQueen wPieces[5]
+#define wKing wPieces[6]
+#define wPosition wPieces[0]
+
+#define bPawn bPieces[1]
+#define bRook bPieces[2]
+#define bKnight bPieces[3]
+#define bBishop bPieces[4]
+#define bQueen bPieces[5]
+#define bKing bPieces[6]
+#define bPosition bPieces[0]
 
 typedef struct BitBoard
 {
     // White
-    uint64_t wPawn;
-    uint64_t wRook;
-    uint64_t wKnight;
-    uint64_t wBishop;
-    uint64_t wQueen;
-    uint64_t wKing;
-    uint64_t wPosition;
+    uint64_t wPieces[7];
+    uint64_t wMoveMap[65][2];
     // Black
-    uint64_t bPawn;
-    uint64_t bRook;
-    uint64_t bKnight;
-    uint64_t bBishop;
-    uint64_t bQueen;
-    uint64_t bKing;
-    uint64_t bPosition;
+    uint64_t bPieces[7];
+    uint64_t bMoveMap[65][2];
     // Castle
     bool wCastled;
     bool bCastled;
+    // Promotion
+    bool SelectPromotion;
+    int8_t PromotionSquare;
+    char PromotionSelection;
     // En Passant
     int8_t enPassant;
     // Game State
     bool playerTurn;
-    bool wInCheck;
-    bool bInCheck;
+    bool GameContinue;
+    uint64_t wCheckMap;
+    uint64_t bCheckMap;
 } BitBoard;
 
 BitBoard InitBoard(); // Initialize starting positions
@@ -85,10 +90,14 @@ void GetCurrentPos(const BitBoard* board, char* posBoard);
 char GetCurrentPiece(const BitBoard *board, int8_t square);
 uint64_t *GetCurrentPieceEx(BitBoard *board, int8_t square);
 
+void PiecePromotion(BitBoard *board);
 void PieceMove(BitBoard* board, int8_t start, int8_t target);
 void PieceCapture(BitBoard* board, int8_t start, int8_t target);
+uint64_t *GetPromotionPrompt(BitBoard *board);
+void GetPossibleMoves(BitBoard *board, int8_t square, bool isWhite);
 
-void GetPossibleMoves(BitBoard *board, int8_t square, uint64_t *possiblePos);
-void GetPossibleCaptures(BitBoard *board, int8_t square, uint64_t *possiblePos, char Piece);
-
+void GenerateMoveMap(BitBoard *board);
+void GenerateCheckMap(BitBoard *board);
+void CheckmateChecker(BitBoard *board);
+void GameStateUpdater(BitBoard *board);
 #endif

@@ -1,5 +1,6 @@
 #include <raylib.h>
 #include <rlgl.h>
+#include <raymath.h>
 #include <gameboard.h>
 #include <bitboard.h>
 
@@ -19,27 +20,17 @@ int main(){
 
     // ------------------ CHESS ------------------
     BitBoard bitboard = InitBoard();
-
-    // char posBoard[65] = {
-    //     '.', '.', '.', '.', '.', '.', '.', '.',
-    //     '.', '.', '.', '.', '.', '.', '.', '.',
-    //     '.', '.', '.', '.', '.', '.', '.', '.',
-    //     '.', '.', '.', '.', '.', '.', '.', '.',
-    //     '.', '.', '.', '.', '.', '.', '.', '.',
-    //     '.', '.', '.', '.', '.', '.', '.', '.',
-    //     '.', '.', '.', '.', '.', '.', '.', '.',
-    //     '.', '.', '.', '.', '.', '.', '.', '.'};
-    // GetCurrentPos(&bitboard, posBoard);
+    GameStateUpdater(&bitboard);
+    int8_t pickedPromotion = -1; 
     // ------------------ CHESS ------------------
 
     // ------------------ MOUSE ------------------
-    Vector2 mouseOffset = {0, 0};
-    Vector2 textureDragPos = {0, 0};
+    Vector2 textureDragPos;
+    Vector2 mouseOffset;
 
     int8_t curCell = -1; 
     char curPiece = '.';
     int8_t lastPiecePos = -1;
-    uint64_t curPiecePosMoveset[2] = {0ULL, 0ULL};
     // ------------------ MOUSE ------------------
 
 #pragma endregion
@@ -52,27 +43,31 @@ int main(){
         // ------------------ EVENTS ------------------
         // --------------------------------------------
         Vector2 mousePos = GetMousePosition();
-        
-        // Handle mouse click
+
+        // ------------------ MOUSE -------------------
         if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
             bool insideGrid = false;
             for (int8_t i = 0; i < 64; i++){
                 if(CheckCollisionPointRec(mousePos, board.Grid[i])){
                     if ((bitboard.playerTurn && IS_BIT(bitboard.bPosition, i) 
-                        && !IS_BIT(curPiecePosMoveset[1], i))
+                        && !IS_BIT(bitboard.wMoveMap[lastPiecePos+1][1], i) && lastPiecePos > -1)
                         ||
                         (!bitboard.playerTurn && IS_BIT(bitboard.wPosition, i) 
-                        && !IS_BIT(curPiecePosMoveset[1], i)))
+                        && !IS_BIT(bitboard.bMoveMap[lastPiecePos+1][1], i))&& lastPiecePos > -1)
                     {
                         break;
                     }
-                    textureDragPos = (Vector2){board.Grid[i].x, board.Grid[i].y};
+
                     insideGrid = true;
+
+                    textureDragPos = (Vector2){board.Grid[i].x, board.Grid[i].y};
                     mouseOffset.x = mousePos.x - board.Grid[i].x;
                     mouseOffset.y = mousePos.y - board.Grid[i].y;
+
+                    lastPiecePos = curCell;
                     curCell = i;
                     curPiece = GetCurrentPiece(&bitboard, i);
-                    printf("Current Piece: %c, Current Cell: %d\n", curPiece, curCell);
+                    // printf("Current Piece: %c, Current Cell: %d, Last Cell: %d\n", curPiece, curCell, lastPiecePos);
                     break;
                 }
             }
@@ -80,67 +75,66 @@ int main(){
                 curCell = -1;
             }
         }
-        else if(IsMouseButtonDown(MOUSE_BUTTON_LEFT) && curCell > -1){
-            // printf("Im being pressed!\n");
-
+        
+        else if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && curCell > -1)
+        {
             textureDragPos.x = mousePos.x - mouseOffset.x;
             textureDragPos.y = mousePos.y - mouseOffset.y;
         }
+
         if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && curCell > -1)
         {
             for (int8_t i = 0; i < 64; i++){
                 if(CheckCollisionPointRec(mousePos, board.Grid[i])){
-                    if(CheckCollisionPointRec(mousePos, board.Grid[i])){
                     if ((bitboard.playerTurn && IS_BIT(bitboard.bPosition, i) 
-                        && !IS_BIT(curPiecePosMoveset[1], i))
+                        && !IS_BIT(bitboard.wMoveMap[lastPiecePos+1][1], i) && lastPiecePos > -1)
                         ||
                         (!bitboard.playerTurn && IS_BIT(bitboard.wPosition, i) 
-                        && !IS_BIT(curPiecePosMoveset[1], i)))
+                        && !IS_BIT(bitboard.bMoveMap[lastPiecePos+1][1], i) && lastPiecePos > -1))
                     {
                         break;
                     }
+                    lastPiecePos = curCell;
                     curCell = i;
                     curPiece = GetCurrentPiece(&bitboard, i);
-                    printf("Current Piece: %c, Current Cell: %d\n", curPiece, curCell);
+                    // printf("Current Piece: %c, Current Cell: %d, Last Cell: %d\n", curPiece, curCell, lastPiecePos);
                     break;
-                }
                 }
             }
         }
+        // ------------------ MOUSE -------------------
 
         // --------------------------------------------
         // ------------------ UPDATE ------------------
         // --------------------------------------------
 
-        if(curCell >-1){
-            if (IS_BIT(curPiecePosMoveset[0], curCell))
-            {
-                PieceMove(&bitboard, lastPiecePos, curCell);
-                curPiecePosMoveset[0] = 0ULL;
-                curPiecePosMoveset[1] = 0ULL;
-                bitboard.playerTurn = !bitboard.playerTurn;
-                curCell = -1;
+        // ------------------ MOVES -------------------
+        if(lastPiecePos > -1){
+            // printf("Processing Move from %d to %d\n", lastPiecePos, curCell);
+            // If white
+            if(bitboard.playerTurn){
+                if(IS_BIT(bitboard.wMoveMap[lastPiecePos+1][0], curCell)){
+                    PieceMove(&bitboard, lastPiecePos, curCell);
+                }
+                else if (IS_BIT(bitboard.wMoveMap[lastPiecePos + 1][1], curCell)){
+                    PieceCapture(&bitboard, lastPiecePos, curCell);
+                }
             }
-            else if (IS_BIT(curPiecePosMoveset[1], curCell))
-            {
-                PieceCapture(&bitboard, lastPiecePos, curCell);
-                curPiecePosMoveset[0] = 0ULL;
-                curPiecePosMoveset[1] = 0ULL;
-                bitboard.playerTurn = !bitboard.playerTurn;
-                curCell = -1;
+            // If black
+            else{
+                if(IS_BIT(bitboard.bMoveMap[lastPiecePos+1][0], curCell)){
+                    PieceMove(&bitboard, lastPiecePos, curCell);
+                }
+                else if (IS_BIT(bitboard.bMoveMap[lastPiecePos + 1][1], curCell)){
+                    PieceCapture(&bitboard, lastPiecePos, curCell);
+                }
             }
-            else if (!IS_BIT(bitboard.wPosition, curCell) && !IS_BIT(bitboard.bPosition, curCell))
-            {
-                curPiecePosMoveset[0] = 0ULL;
-                curPiecePosMoveset[1] = 0ULL;
-            }
-            else
-            {
-                lastPiecePos = curCell;
-                GetPossibleMoves(&bitboard, curCell, curPiecePosMoveset);
-            }
-
+            lastPiecePos = curCell;
         }
+        if(bitboard.SelectPromotion && pickedPromotion > -1){   
+            PiecePromotion(&bitboard);
+        }
+        // ------------------ MOVES -------------------
 
         // --------------------------------------------
         // ------------------  DRAW  ------------------
@@ -157,8 +151,11 @@ int main(){
         // ------------------  BASE  ------------------
 
         // ------------------ PIECES ------------------
-        DrawMouseClick(&board, curCell, curPiece, curPiecePosMoveset, BEIGE);
+        DrawMouseClick(&board, &bitboard, curCell, BEIGE);
         DrawChessBoard(&bitboard, &assets, &board, (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && curCell > -1), curCell, textureDragPos);
+        if(bitboard.SelectPromotion){
+            DrawPromotionSelectionGrid(&board, &bitboard);
+        }
         // ------------------ PIECES ------------------
 
         EndDrawing();

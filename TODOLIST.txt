@@ -1,8 +1,5 @@
-- Implement edge cases (en passant / castling)
-- Implement check and checkmate checking
-- Implement possible moves in check
+- Implement promotion selection
 - Implement 2 player mode
-- Implement mouse dragging
 - Implement better overlay
 
 - Start working on the chess bot

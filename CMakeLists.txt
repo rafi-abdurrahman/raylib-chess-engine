@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(raylib-chess-engine C)
-set(CMAKE_C_STANDARD 17)
+set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED)
 
 

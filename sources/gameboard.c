@@ -93,10 +93,26 @@ Assets InitializeAsset(char* folder){
 void DrawChessBoard(const BitBoard *bitboard, const Assets *assets, const GameBoard *board,
                     bool Drag, int8_t draggedPiece, Vector2 draggedPiecePos)
 {
-    DrawText(bitboard->playerTurn ? "White's Turn" : "Black's Turn",
-             board->CenterX - (assets->boardTexture.width * 2),
-             board->CenterY - (assets->boardTexture.height * 2),
-             40, bitboard->playerTurn ? WHITE : BLACK);
+    if(bitboard->GameContinue){
+        if(bitboard->bCheckMap != 0 || bitboard->bCheckMap != 0){
+            DrawText(bitboard->playerTurn ? "White is in check!" : "Black is in check!",
+                     board->CenterX - (assets->boardTexture.width * 2),
+                     board->CenterY - (assets->boardTexture.height * 2),
+                     40, RED);
+        }
+        else{
+            DrawText(bitboard->playerTurn ? "White's Turn" : "Black's Turn",
+                    board->CenterX - (assets->boardTexture.width * 2),
+                    board->CenterY - (assets->boardTexture.height * 2),
+                    40, bitboard->playerTurn ? WHITE : BLACK);
+        }
+    }
+    else{
+        DrawText(!bitboard->playerTurn ? "White won!" : "Black won!" ,
+                 board->CenterX - (assets->boardTexture.width * 2),
+                 board->CenterY - (assets->boardTexture.height * 2),
+                 40, bitboard->playerTurn ? WHITE : BLACK);
+    }
 
     for (uint8_t i = 0; i < 64; i++)
     {
@@ -199,9 +215,44 @@ void DrawPossibleCaptures(const GameBoard *board, const uint64_t posCaptures, Co
     }
 }
 
-void DrawMouseClick(const GameBoard *board, int8_t Cell, char Piece, uint64_t *pieceMoveset, Color highlight){
-    if(Cell > -1)
+void DrawMouseClick(const GameBoard *board, const BitBoard *bitboard, int8_t Cell, Color highlight){
+    if(Cell > -1){
         DrawRectangleRec(board->Grid[Cell], highlight);
-    DrawPossibleMoves(board, pieceMoveset[0], WHITE);
-    DrawPossibleCaptures(board, pieceMoveset[1], RED);
+        if(bitboard->playerTurn){
+            DrawPossibleMoves(board, bitboard->wMoveMap[Cell+1][0], WHITE);
+            DrawPossibleCaptures(board, bitboard->wMoveMap[Cell+1][1], RED);
+        }
+        else{
+            DrawPossibleMoves(board, bitboard->bMoveMap[Cell + 1][0], WHITE);
+            DrawPossibleCaptures(board, bitboard->bMoveMap[Cell + 1][1], RED);
+        }
+
+    }
+}
+
+void DrawPromotionSelectionGrid(GameBoard *board, BitBoard *bitboard){
+    // White promotion
+    if(bitboard->PromotionSquare > 55){
+        board->PromotionSelectionGrid[0] = (Rectangle){board->Grid[bitboard->PromotionSquare].x - 66,
+                                                       board->Grid[bitboard->PromotionSquare].y - 44, 44, 44};
+        DrawRectangleRec(board->PromotionSelectionGrid[0], YELLOW);
+        for (int8_t i = 1; i < 5; i++){
+            board->PromotionSelectionGrid[i] = (Rectangle){board->PromotionSelectionGrid[i-1].x + 44,
+                                                           board->PromotionSelectionGrid[i-1].y, 44, 44};
+            DrawRectangleRec(board->PromotionSelectionGrid[i], YELLOW);
+        }
+    }
+    else if(bitboard->PromotionSquare < 8){
+        board->PromotionSelectionGrid[0] = (Rectangle){board->Grid[bitboard->PromotionSquare].x + 66,
+                                                       board->Grid[bitboard->PromotionSquare].y + 44, 44, 44};
+        DrawRectangleRec(board->PromotionSelectionGrid[0], YELLOW);
+        for (int8_t i = 1; i <= 5; i++)
+        {
+            board->PromotionSelectionGrid[i] = (Rectangle){board->PromotionSelectionGrid[i - 1].x + 44,
+                                                           board->PromotionSelectionGrid[i - 1].y, 44, 44};
+            DrawRectangleRec(board->PromotionSelectionGrid[i], YELLOW);
+        }
+    }
+
+
 }
