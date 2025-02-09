@@ -21,7 +21,6 @@ int main(){
     // ------------------ CHESS ------------------
     BitBoard bitboard = InitBoard();
     GameStateUpdater(&bitboard);
-    int8_t pickedPromotion = -1; 
     // ------------------ CHESS ------------------
 
     // ------------------ MOUSE ------------------
@@ -42,13 +41,44 @@ int main(){
         // --------------------------------------------
         // ------------------ EVENTS ------------------
         // --------------------------------------------
-        Vector2 mousePos = GetMousePosition();
+        board.mousePos = GetMousePosition();
 
         // ------------------ MOUSE -------------------
         if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
+            if(bitboard.SelectPromotion){
+                for (int8_t i = 0; i < 5; i++){
+                    if(CheckCollisionPointRec(board.mousePos, board.PromotionSelectionGrid[i])){
+                        if(bitboard.playerTurn){
+                            if (i == 0)
+                                bitboard.PromotionTarget = 'P';
+                            if (i == 1)
+                                bitboard.PromotionTarget = 'N';
+                            if (i == 2)
+                                bitboard.PromotionTarget = 'B';
+                            if (i == 3)
+                                bitboard.PromotionTarget = 'R';
+                            if (i == 4)
+                                bitboard.PromotionTarget = 'Q';
+                        }
+                        else{
+                            if (i == 0)
+                                bitboard.PromotionTarget = 'p';
+                            if (i == 1)
+                                bitboard.PromotionTarget = 'n';
+                            if (i == 2)
+                                bitboard.PromotionTarget = 'b';
+                            if (i == 3)
+                                bitboard.PromotionTarget = 'r';
+                            if (i == 4)
+                                bitboard.PromotionTarget = 'q';
+                        }
+                        break;
+                    }
+                }
+            }
             bool insideGrid = false;
             for (int8_t i = 0; i < 64; i++){
-                if(CheckCollisionPointRec(mousePos, board.Grid[i])){
+                if(CheckCollisionPointRec(board.mousePos, board.Grid[i])){
                     if ((bitboard.playerTurn && IS_BIT(bitboard.bPosition, i) 
                         && !IS_BIT(bitboard.wMoveMap[lastPiecePos+1][1], i) && lastPiecePos > -1)
                         ||
@@ -61,8 +91,8 @@ int main(){
                     insideGrid = true;
 
                     textureDragPos = (Vector2){board.Grid[i].x, board.Grid[i].y};
-                    mouseOffset.x = mousePos.x - board.Grid[i].x;
-                    mouseOffset.y = mousePos.y - board.Grid[i].y;
+                    mouseOffset.x = board.mousePos.x - board.Grid[i].x;
+                    mouseOffset.y = board.mousePos.y - board.Grid[i].y;
 
                     lastPiecePos = curCell;
                     curCell = i;
@@ -78,14 +108,14 @@ int main(){
         
         else if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && curCell > -1)
         {
-            textureDragPos.x = mousePos.x - mouseOffset.x;
-            textureDragPos.y = mousePos.y - mouseOffset.y;
+            textureDragPos.x = board.mousePos.x - mouseOffset.x;
+            textureDragPos.y = board.mousePos.y - mouseOffset.y;
         }
 
         if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && curCell > -1)
         {
             for (int8_t i = 0; i < 64; i++){
-                if(CheckCollisionPointRec(mousePos, board.Grid[i])){
+                if(CheckCollisionPointRec(board.mousePos, board.Grid[i])){
                     if ((bitboard.playerTurn && IS_BIT(bitboard.bPosition, i) 
                         && !IS_BIT(bitboard.wMoveMap[lastPiecePos+1][1], i) && lastPiecePos > -1)
                         ||
@@ -131,7 +161,7 @@ int main(){
             }
             lastPiecePos = curCell;
         }
-        if(bitboard.SelectPromotion && pickedPromotion > -1){   
+        if(bitboard.SelectPromotion && bitboard.PromotionTarget != '.'){   
             PiecePromotion(&bitboard);
         }
         // ------------------ MOVES -------------------
@@ -154,7 +184,7 @@ int main(){
         DrawMouseClick(&board, &bitboard, curCell, BEIGE);
         DrawChessBoard(&bitboard, &assets, &board, (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && curCell > -1), curCell, textureDragPos);
         if(bitboard.SelectPromotion){
-            DrawPromotionSelectionGrid(&board, &bitboard);
+            DrawPromotionSelectionGrid(&board, &bitboard, &assets);
         }
         // ------------------ PIECES ------------------
 

@@ -74,7 +74,7 @@ typedef struct BitBoard
     // Promotion
     bool SelectPromotion;
     int8_t PromotionSquare;
-    char PromotionSelection;
+    char PromotionTarget;
     // En Passant
     int8_t enPassant;
     // Game State

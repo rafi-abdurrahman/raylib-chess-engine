@@ -1,4 +1,3 @@
-- Implement promotion selection
 - Implement 2 player mode
 - Implement better overlay
 

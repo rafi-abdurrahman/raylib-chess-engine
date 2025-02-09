@@ -35,7 +35,7 @@ BitBoard InitBoard(){
     // Promotion
     board.SelectPromotion = false;
     board.PromotionSquare = -1;
-    board.PromotionSelection = '.'; // Promotion doesnt happen if not changed
+    board.PromotionTarget = '.'; // '.' for default
     // En Passant
     board.enPassant = -1; // -1 if enpassant is illegible, collumn number if enpassant is legible (0-7)
     // Game State
@@ -438,31 +438,40 @@ void PieceCapture(BitBoard *board, int8_t x, int8_t target)
 void PiecePromotion(BitBoard *board){
     uint64_t *Piece = GetPromotionPrompt(board);
     SET_BIT(*Piece, board->PromotionSquare);
-    if(board->playerTurn)
+    if(board->playerTurn){
+        CLEAR_BIT(board->wPawn, board->PromotionSquare);
         SET_BIT(board->wPosition, board->PromotionSquare);
-    else
+    }
+    else{
+        CLEAR_BIT(board->wPawn, board->PromotionSquare);
         SET_BIT(board->bPosition, board->PromotionSquare);
+    }
     board->SelectPromotion = false;
+    board->PromotionTarget = '.';
     GameStateUpdater(board);
     return;
 }
 
 uint64_t *GetPromotionPrompt(BitBoard *board){
-    if(board->PromotionSelection == 'P')
+    if(board->PromotionTarget == 'P')
         return &board->wPawn;
-    if (board->PromotionSelection == 'R')
+    if (board->PromotionTarget == 'R')
         return &board->wRook;
-    if (board->PromotionSelection == 'N')
+    if (board->PromotionTarget == 'N')
         return &board->wKnight;
-    if (board->PromotionSelection == 'Q')
+    if (board->PromotionTarget == 'B')
+        return &board->wBishop;
+    if (board->PromotionTarget == 'Q')
         return &board->wQueen;
-    if (board->PromotionSelection == 'p')
+    if (board->PromotionTarget == 'p')
         return &board->bPawn;
-    if (board->PromotionSelection == 'r')
+    if (board->PromotionTarget == 'r')
         return &board->bRook;
-    if (board->PromotionSelection == 'n')
+    if (board->PromotionTarget == 'n')
         return &board->bKnight;
-    if (board->PromotionSelection == 'q')
+    if (board->PromotionTarget == 'b')
+        return &board->bBishop;
+    if (board->PromotionTarget == 'q')
         return &board->bQueen;
 }
 
@@ -489,8 +498,9 @@ void GetPossibleMoves(BitBoard *board, int8_t square, bool isWhite)
             // Find Possible captures and protects
             // Right
             if (square + 9 < 64 && (square + 9) % 8 == (square + 1) % 8 && square % 8 < 7)
-            {
+            {           
                 if (IS_BIT(board->bPosition, square + 9)){
+                    
                     SET_BIT(board->wMoveMap[square + 1][1], square + 9);
                     SET_BIT(board->wMoveMap[0][0], square + 9);
                 }
@@ -513,8 +523,9 @@ void GetPossibleMoves(BitBoard *board, int8_t square, bool isWhite)
             }
             // En Passant
             // (square%8) obtains col number and (square/8) obtains row number
-            if ((board->enPassant == (square % 8) - 1 || board->enPassant == (square % 8) + 1) && (square / 8) == 4)
+            if ((board->enPassant != -1 && board->enPassant == (square % 8) - 1 || board->enPassant == (square % 8) + 1) && (square / 8) == 4){
                 SET_BIT(board->wMoveMap[square + 1][1], board->enPassant + 8 * ((square / 8) + 1));
+            }
 
             return;
         }
@@ -760,7 +771,7 @@ void GetPossibleMoves(BitBoard *board, int8_t square, bool isWhite)
             }
             
             // LEFT UP
-            if ((square + 6 < 64) && (square + 10) / 8 == (square / 8) + 1)
+            if ((square + 6 < 64) && (square + 6) / 8 == (square / 8) + 1)
             {
                 // Search for protects
                 if (IS_BIT(board->wPosition, square + 6))
@@ -1038,7 +1049,7 @@ void GetPossibleMoves(BitBoard *board, int8_t square, bool isWhite)
 
             // Search possible captures and protects
             // Right
-            if (square >= 7 && (square - 7) % 8 == (square + 1) % 8)
+            if (square >= 7 && (square - 7) % 8 == (square + 1) % 8 && square%8 < 7)
             {
                 if (IS_BIT(board->wPosition, square - 7)){
                     SET_BIT(board->bMoveMap[square + 1][1], square - 7);
@@ -1049,7 +1060,7 @@ void GetPossibleMoves(BitBoard *board, int8_t square, bool isWhite)
                 }
             }
             // Left
-            if (square >= 9 && (square - 9) % 8 == (square - 1) % 8)
+            if (square >= 9 && (square - 9) % 8 == (square - 1) % 8 && square % 8 > 0)
             {
                 if (IS_BIT(board->wPosition, square - 9))
                 {
@@ -1063,7 +1074,7 @@ void GetPossibleMoves(BitBoard *board, int8_t square, bool isWhite)
             }
             // En Passant
             // (square%8) obtains col number and (square/8) obtains row number
-            if ((board->enPassant == (square % 8) - 1 || board->enPassant == (square % 8) + 1) && (square / 8) == 3)
+            if ((board->enPassant != -1 && board->enPassant == (square % 8) - 1 || board->enPassant == (square % 8) + 1) && (square / 8) == 3)
                 SET_BIT(board->bMoveMap[square + 1][1], board->enPassant + 8 * ((square / 8) - 1));
 
             return;
@@ -1321,7 +1332,7 @@ void GetPossibleMoves(BitBoard *board, int8_t square, bool isWhite)
             }
 
             // LEFT UP
-            if ((square + 6 < 64) && (square + 10) / 8 == (square / 8) + 1)
+            if ((square + 6 < 64) && (square + 6) / 8 == (square / 8) + 1)
             {
                 // Search for protects
                 if (IS_BIT(board->bPosition, square + 6))
@@ -1968,15 +1979,41 @@ void ClearIllegalMoves(BitBoard *board){
         board->bMoveMap[bKingPos+1][0] &= ~(board->wMoveMap[0][0]); // king cannot move to a possible check square
 
         board->bMoveMap[0][0] = board->bMoveMap[bKingPos+1][1] | board->bMoveMap[bKingPos+1][0]; // Reset move map to match cleared illegal moves
-
+        
 
         for (int8_t i = 1; i <= 64; i++)
         {
             if (i-1 == bKingPos || !IS_BIT(board->bPosition, i-1))
                 continue;
+
             if(board->bCheckMap != 0){
+                if(i == 59){
+                    for (int rank = 7; rank >= 0; rank--)
+                    {
+                        for (int file = 0; file < 8; file++)
+                        {
+                            int square = rank * 8 + file;
+                            uint64_t mask = 1ULL << square;
+                            printf("%c ", (board->bMoveMap[59][1] & mask) ? '1' : '.');
+                        }
+                        printf("\n");
+                    }
+                }
                 board->bMoveMap[i][0] &= board->bCheckMap;  // Remove any moves that is not to block check
                 board->bMoveMap[i][1] &= board->bCheckMap;  // Remove any captures that is not to stop check
+                if (i == 59)
+                {
+                    for (int rank = 7; rank >= 0; rank--)
+                    {
+                        for (int file = 0; file < 8; file++)
+                        {
+                            int square = rank * 8 + file;
+                            uint64_t mask = 1ULL << square;
+                            printf("%c ", (board->bMoveMap[59][1] & mask) ? '1' : '.');
+                        }
+                        printf("\n");
+                    }
+                }
             }
 
             if (IS_BIT(board->wMoveMap[0][0], i - 1))
@@ -1990,7 +2027,7 @@ void ClearIllegalMoves(BitBoard *board){
                     {
                         for (int8_t x = bKingPos + 8; x < i - 1; x += 8)
                         {
-                            if (IS_BIT(board->wPosition, x))
+                            if (IS_BIT(board->bPosition, x))
                             {
                                 protecting = false;
                                 break;
@@ -2013,7 +2050,7 @@ void ClearIllegalMoves(BitBoard *board){
                     {
                         for (int8_t x = bKingPos - 8; x > i - 1; x -= 8)
                         {
-                            if (IS_BIT(board->wPosition, x))
+                            if (IS_BIT(board->bPosition, x))
                             {
                                 protecting = false;
                                 break;
@@ -2041,7 +2078,7 @@ void ClearIllegalMoves(BitBoard *board){
                     {
                         for (int8_t x = bKingPos + 1; x < i - 1; x++)
                         {
-                            if (IS_BIT(board->wPosition, x))
+                            if (IS_BIT(board->bPosition, x))
                             {
                                 protecting = false;
                                 break;
@@ -2063,8 +2100,8 @@ void ClearIllegalMoves(BitBoard *board){
                     else
                     {
                         for (int8_t x = bKingPos - 1; x > i - 1; x--)
-                        {
-                            if (IS_BIT(board->wPosition, x))
+                        {   
+                            if (IS_BIT(board->bPosition, x))
                             {
                                 protecting = false;
                                 break;
@@ -2094,7 +2131,7 @@ void ClearIllegalMoves(BitBoard *board){
                     {
                         for (int8_t x = bKingPos + 9; x < i - 1; x += 9)
                         {
-                            if (IS_BIT(board->wPosition, x))
+                            if (IS_BIT(board->bPosition, x))
                             {
                                 protecting = false;
                                 break;
@@ -2116,7 +2153,7 @@ void ClearIllegalMoves(BitBoard *board){
                     {
                         for (int8_t x = bKingPos - 9; x > i - 1; x -= 9)
                         {
-                            if (IS_BIT(board->wPosition, x))
+                            if (IS_BIT(board->bPosition, x))
                             {
                                 protecting = false;
                                 break;
@@ -2144,7 +2181,7 @@ void ClearIllegalMoves(BitBoard *board){
                     {
                         for (int8_t x = bKingPos + 7; x < i - 1; x += 7)
                         {
-                            if (IS_BIT(board->wPosition, x))
+                            if (IS_BIT(board->bPosition, x))
                             {
                                 protecting = false;
                                 break;
@@ -2166,7 +2203,7 @@ void ClearIllegalMoves(BitBoard *board){
                     {
                         for (int8_t x = bKingPos - 7; x > i - 1; x -= 7)
                         {
-                            if (IS_BIT(board->wPosition, x))
+                            if (IS_BIT(board->bPosition, x))
                             {
                                 protecting = false;
                                 break;
@@ -2192,14 +2229,15 @@ void ClearIllegalMoves(BitBoard *board){
 
                 if (protecting)
                 {
-                    printf("error found here maybe\n");
                     board->bMoveMap[i][0] = 0ULL;
                     board->bMoveMap[i][1] = 0ULL;
                 }
-            }
             
+            }
+
             board->bMoveMap[0][0] |= board->bMoveMap[i][0] | board->bMoveMap[i][1]; // Add back moves after removing
         }
+        
     }
 
     // printf("White's Move Map: \n");
@@ -2213,17 +2251,19 @@ void ClearIllegalMoves(BitBoard *board){
     //     }
     //     printf("\n");
     // }
-    // printf("Black's Move Map: \n");
+
+    // printf("Black's Check Map: \n");
     // for (int rank = 7; rank >= 0; rank--)
     // {
     //     for (int file = 0; file < 8; file++)
     //     {
     //         int square = rank * 8 + file;
     //         uint64_t mask = 1ULL << square;
-    //         printf("%c ", (board->bMoveMap[56][0] & mask) ? '1' : '.');
+    //         printf("%c ", (board->bCheckMap & mask) ? '1' : '.');
     //     }
     //     printf("\n");
     // }
+
 }
 
 void CheckmateChecker(BitBoard *board){

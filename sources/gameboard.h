@@ -12,6 +12,7 @@ typedef struct GameBoard
     int windowHeight;
     int CenterX;
     int CenterY;
+    Vector2 mousePos;
     Rectangle Grid[64];
     Rectangle PromotionSelectionGrid[5];
 } GameBoard;
@@ -47,5 +48,5 @@ void DrawChessBoard(const BitBoard *bitboard, const Assets *assets, const GameBo
 void DrawPossibleMoves(const GameBoard *board, const uint64_t posMoves, Color color);
 void DrawPossibleCaptures(const GameBoard *board, const uint64_t posCaptures, Color color);
 void DrawMouseClick(const GameBoard *board, const BitBoard *bitboard, int8_t Cell, Color highlight);
-void DrawPromotionSelectionGrid(GameBoard *board, BitBoard *bitboard);
+void DrawPromotionSelectionGrid(GameBoard *board, BitBoard *bitboard, const Assets *assets);
 #endif

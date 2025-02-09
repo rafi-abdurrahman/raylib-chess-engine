@@ -230,27 +230,84 @@ void DrawMouseClick(const GameBoard *board, const BitBoard *bitboard, int8_t Cel
     }
 }
 
-void DrawPromotionSelectionGrid(GameBoard *board, BitBoard *bitboard){
+void DrawPromotionSelectionGrid(GameBoard *board, BitBoard *bitboard, const Assets *assets){
     // White promotion
     if(bitboard->PromotionSquare > 55){
-        board->PromotionSelectionGrid[0] = (Rectangle){board->Grid[bitboard->PromotionSquare].x - 66,
-                                                       board->Grid[bitboard->PromotionSquare].y - 44, 44, 44};
-        DrawRectangleRec(board->PromotionSelectionGrid[0], YELLOW);
+        board->PromotionSelectionGrid[0] = (Rectangle){board->Grid[bitboard->PromotionSquare].x - 200,
+                                                       board->Grid[bitboard->PromotionSquare].y - 100, 88, 88};
+        if(CheckCollisionPointRec(board->mousePos, board->PromotionSelectionGrid[0])){
+            DrawRectangleRec(board->PromotionSelectionGrid[0], (Color){5, 113, 55, 255});
+        }
+        else{
+            DrawRectangleRec(board->PromotionSelectionGrid[0], WHITE);
+        }
         for (int8_t i = 1; i < 5; i++){
-            board->PromotionSelectionGrid[i] = (Rectangle){board->PromotionSelectionGrid[i-1].x + 44,
-                                                           board->PromotionSelectionGrid[i-1].y, 44, 44};
-            DrawRectangleRec(board->PromotionSelectionGrid[i], YELLOW);
+            board->PromotionSelectionGrid[i] = (Rectangle){board->PromotionSelectionGrid[i-1].x + 100,
+                                                           board->PromotionSelectionGrid[i-1].y, 88, 88};
+            if (CheckCollisionPointRec(board->mousePos, board->PromotionSelectionGrid[i]))
+            {
+                DrawRectangleRec(board->PromotionSelectionGrid[i], (Color){5, 113, 55, 255});
+            }
+            else
+            {
+                DrawRectangleRec(board->PromotionSelectionGrid[i], WHITE);
+            }
+        }
+        Texture2D texture;
+        for (int8_t i = 0; i < 5; i++){
+            if(i == 0)
+                texture = assets->wPawnTexture;
+            if(i == 1)
+                texture = assets->wKnightTexture;
+            if (i == 2)
+                texture = assets->wBishopTexture;
+            if (i == 3)
+                texture = assets->wRookTexture;
+            if (i == 4)
+                texture = assets->wQueenTexture;
+            DrawTextureEx(texture, (Vector2){board->PromotionSelectionGrid[i].x + 44 - (float)(texture.width * 2), board->PromotionSelectionGrid[i].y + 44 - (float)(texture.height * 2)}, 0.f, 4.f, WHITE);
         }
     }
+
     else if(bitboard->PromotionSquare < 8){
-        board->PromotionSelectionGrid[0] = (Rectangle){board->Grid[bitboard->PromotionSquare].x + 66,
-                                                       board->Grid[bitboard->PromotionSquare].y + 44, 44, 44};
-        DrawRectangleRec(board->PromotionSelectionGrid[0], YELLOW);
-        for (int8_t i = 1; i <= 5; i++)
+        board->PromotionSelectionGrid[0] = (Rectangle){board->Grid[bitboard->PromotionSquare].x - 200,
+                                                       board->Grid[bitboard->PromotionSquare].y + 100, 88, 88};
+        if (CheckCollisionPointRec(board->mousePos, board->PromotionSelectionGrid[0]))
         {
-            board->PromotionSelectionGrid[i] = (Rectangle){board->PromotionSelectionGrid[i - 1].x + 44,
-                                                           board->PromotionSelectionGrid[i - 1].y, 44, 44};
-            DrawRectangleRec(board->PromotionSelectionGrid[i], YELLOW);
+            DrawRectangleRec(board->PromotionSelectionGrid[0], (Color){5, 113, 55, 255});
+        }
+        else
+        {
+            DrawRectangleRec(board->PromotionSelectionGrid[0], WHITE);
+        }
+        for (int8_t i = 1; i < 5; i++)
+        {
+            board->PromotionSelectionGrid[i] = (Rectangle){board->PromotionSelectionGrid[i - 1].x + 100,
+                                                           board->PromotionSelectionGrid[i - 1].y, 88, 88};
+            if (CheckCollisionPointRec(board->mousePos, board->PromotionSelectionGrid[i]))
+            {
+                DrawRectangleRec(board->PromotionSelectionGrid[i], (Color){5, 113, 55, 255});
+            }
+            else
+            {
+                DrawRectangleRec(board->PromotionSelectionGrid[i], WHITE);
+            }
+        }
+
+        Texture2D texture;
+        for (int8_t i = 0; i < 5; i++)
+        {
+            if (i == 0)
+                texture = assets->bPawnTexture;
+            if (i == 1)
+                texture = assets->bKnightTexture;
+            if (i == 2)
+                texture = assets->bBishopTexture;
+            if (i == 3)
+                texture = assets->bRookTexture;
+            if (i == 4)
+                texture = assets->bQueenTexture;
+            DrawTextureEx(texture, (Vector2){board->PromotionSelectionGrid[i].x + 44 - (float)(texture.width * 2), board->PromotionSelectionGrid[i].y + 44 - (float)(texture.height * 2)}, 0.f, 4.f, WHITE);
         }
     }
 
