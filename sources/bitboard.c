@@ -1740,13 +1740,18 @@ void ClearIllegalMoves(BitBoard *board){
         // Clear king's illegal moves
         board->wMoveMap[wKingPos+1][1] &= ~(board->bMoveMap[0][1]); // king cannot capture protected pieces
         board->wMoveMap[wKingPos+1][0] &= ~(board->bMoveMap[0][0]); // king cannot move to a possible check square
+        if (board->wCheckMap != 0 && !board->wCastled)
+        {
+            CLEAR_BIT(board->wMoveMap[wKingPos + 1][0], 2);
+            CLEAR_BIT(board->wMoveMap[wKingPos + 1][0], 6);
 
+        }
         board->wMoveMap[0][0] = board->wMoveMap[wKingPos+1][1] | board->wMoveMap[wKingPos+1][0]; // Reset move map to match cleared illegal moves
         for (int8_t i = 1; i <= 64; i++){
             if(i-1 == wKingPos || !IS_BIT(board->wPosition, i-1))
                 continue;
             if(board->wCheckMap != 0){
-
+                
                 board->wMoveMap[i][0] &= board->wCheckMap;  // Remove any moves that is not to block check
                 board->wMoveMap[i][1] &= board->wCheckMap;  // Remove any captures that is not to stop check
             }
@@ -1978,8 +1983,13 @@ void ClearIllegalMoves(BitBoard *board){
         board->bMoveMap[bKingPos+1][1] &= ~(board->wMoveMap[0][1]); // king cannot capture protected pieces
         board->bMoveMap[bKingPos+1][0] &= ~(board->wMoveMap[0][0]); // king cannot move to a possible check square
 
+        if (board->bCheckMap != 0 && !board->bCastled)
+        {
+            CLEAR_BIT(board->bMoveMap[bKingPos + 1][0], 58);
+            CLEAR_BIT(board->bMoveMap[bKingPos + 1][0], 62);
+        }
+
         board->bMoveMap[0][0] = board->bMoveMap[bKingPos+1][1] | board->bMoveMap[bKingPos+1][0]; // Reset move map to match cleared illegal moves
-        
 
         for (int8_t i = 1; i <= 64; i++)
         {

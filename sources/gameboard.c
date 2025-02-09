@@ -94,7 +94,7 @@ void DrawChessBoard(const BitBoard *bitboard, const Assets *assets, const GameBo
                     bool Drag, int8_t draggedPiece, Vector2 draggedPiecePos)
 {
     if(bitboard->GameContinue){
-        if(bitboard->bCheckMap != 0 || bitboard->bCheckMap != 0){
+        if(bitboard->wCheckMap != 0 || bitboard->bCheckMap != 0){
             DrawText(bitboard->playerTurn ? "White is in check!" : "Black is in check!",
                      board->CenterX - (assets->boardTexture.width * 2),
                      board->CenterY - (assets->boardTexture.height * 2),

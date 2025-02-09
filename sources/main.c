@@ -11,7 +11,7 @@ int main(){
     GameBoard board = CreateGameBoard(1920, 1080);
     InitWindow(board.windowWidth, board.windowHeight, "Chess Game");
     SetTargetFPS(60);
-    Assets assets = InitializeAsset("../assets/chess_green/");
+    Assets assets = InitializeAsset("assets/chess_green/");
     // ------------------ BOARD ------------------
 
     // ------------------ COLOR ------------------
