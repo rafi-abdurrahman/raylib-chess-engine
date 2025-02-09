@@ -1007,7 +1007,7 @@ void GetPossibleMoves(BitBoard *board, int8_t square, bool isWhite)
             }
 
             // LEFT
-            if (square - 1 >= 0 && !IS_BIT(board->wPosition, square - 1) && !IS_BIT(board->bPosition, square - 1))
+            if (square - 1 >= 0)
             {
                 // Search for protects
                 if (IS_BIT(board->wPosition, square - 1))
@@ -1573,7 +1573,7 @@ void GetPossibleMoves(BitBoard *board, int8_t square, bool isWhite)
             }
 
             // LEFT
-            if (square - 1 >= 0 && !IS_BIT(board->wPosition, square - 1) && !IS_BIT(board->bPosition, square - 1))
+            if (square - 1 >= 0)
             {
                 // Search for protects
                 if (IS_BIT(board->bPosition, square - 1))
