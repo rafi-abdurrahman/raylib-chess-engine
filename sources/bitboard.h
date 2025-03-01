@@ -79,10 +79,11 @@ typedef struct BitBoard
     int8_t enPassant;
     // Game State
     bool playerTurn;
-    bool GameContinue;
+    int8_t GameContinue;
     uint64_t wCheckMap;
     uint64_t bCheckMap;
     bool doubleCheck;
+    int8_t fiftyMoveRule;
 } BitBoard;
 
 BitBoard InitBoard(); // Initialize starting positions
@@ -101,4 +102,5 @@ void GenerateMoveMap(BitBoard *board);
 void GenerateCheckMap(BitBoard *board);
 void CheckmateChecker(BitBoard *board);
 void GameStateUpdater(BitBoard *board);
+void DrawChecker(BitBoard *board);
 #endif

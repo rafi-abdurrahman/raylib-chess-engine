@@ -93,7 +93,7 @@ Assets InitializeAsset(char* folder){
 void DrawChessBoard(const BitBoard *bitboard, const Assets *assets, const GameBoard *board,
                     bool Drag, int8_t draggedPiece, Vector2 draggedPiecePos)
 {
-    if(bitboard->GameContinue){
+    if(bitboard->GameContinue < 0){
         if(bitboard->wCheckMap != 0 || bitboard->bCheckMap != 0){
             DrawText(bitboard->playerTurn ? "White is in check!" : "Black is in check!",
                      board->CenterX - (assets->boardTexture.width * 2),
@@ -108,10 +108,24 @@ void DrawChessBoard(const BitBoard *bitboard, const Assets *assets, const GameBo
         }
     }
     else{
-        DrawText(!bitboard->playerTurn ? "White won!" : "Black won!" ,
-                 board->CenterX - (assets->boardTexture.width * 2),
-                 board->CenterY - (assets->boardTexture.height * 2),
-                 40, bitboard->playerTurn ? WHITE : BLACK);
+        if(bitboard->GameContinue == 0){
+            DrawText( "It's a draw!",
+                    board->CenterX - (assets->boardTexture.width * 2),
+                    board->CenterY - (assets->boardTexture.height * 2),
+                    40, BLACK);
+        }
+        else if(bitboard->GameContinue == 1){
+            DrawText( "White won!",
+                    board->CenterX - (assets->boardTexture.width * 2),
+                    board->CenterY - (assets->boardTexture.height * 2),
+                    40, WHITE);
+        }
+        else if(bitboard->GameContinue == 2){
+            DrawText( "Black won!!",
+                    board->CenterX - (assets->boardTexture.width * 2),
+                    board->CenterY - (assets->boardTexture.height * 2),
+                    40, BLACK);
+        }
     }
 
     for (uint8_t i = 0; i < 64; i++)

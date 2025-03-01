@@ -40,10 +40,11 @@ BitBoard InitBoard(){
     board.enPassant = -1; // -1 if enpassant is illegible, collumn number if enpassant is legible (0-7)
     // Game State
     board.playerTurn = 0; // 1 if white, 0 if black, x with black because initial GameStateUpdater() call
-    board.GameContinue = 1;
+    board.GameContinue = -1; //-1 if Continue, 0 if Draw, 1 if White Wins, 2 if Black Wins
     board.wCheckMap = 0ULL;
     board.bCheckMap = 0ULL;
     board.doubleCheck = 0;
+    board.fiftyMoveRule = 0;
 
     return board;
 }
@@ -167,6 +168,7 @@ uint64_t *GetCurrentPieceEx(BitBoard *board, int8_t square)
 #pragma region Piece Moveset
 
 void PieceMove(BitBoard *board, int8_t x, int8_t target){
+    board->fiftyMoveRule++;
     uint64_t *Piece = GetCurrentPieceEx(board, x);
 
     // char piece = GetCurrentPiece(board, x);
@@ -294,6 +296,7 @@ void PieceMove(BitBoard *board, int8_t x, int8_t target){
 
 void PieceCapture(BitBoard *board, int8_t x, int8_t target)
 {
+    board->fiftyMoveRule = 0;
     uint64_t *Capturer = GetCurrentPieceEx(board, x);
     uint64_t *Captured;
     int8_t temp = target;
@@ -447,6 +450,7 @@ void PieceCapture(BitBoard *board, int8_t x, int8_t target)
 }
 
 void PiecePromotion(BitBoard *board){
+    board->fiftyMoveRule++;
     uint64_t *Piece = GetPromotionPrompt(board);
     SET_BIT(*Piece, board->PromotionSquare);
     if(board->playerTurn){
@@ -2437,9 +2441,41 @@ void ClearIllegalMoves(BitBoard *board){
 }
 
 void CheckmateChecker(BitBoard *board){
-    if ((board->wCheckMap != 0 && board->wMoveMap[0][0] == 0) || 
-        (board->bCheckMap != 0 && board->bMoveMap[0][0] == 0))
-        board->GameContinue = false;
+    if (board->bCheckMap != 0 && board->bMoveMap[0][0] == 0)
+        board->GameContinue = 1;
+    else if (board->wCheckMap != 0 && board->wMoveMap[0][0] == 0)
+        board->GameContinue = 2;
+}
+
+void DrawChecker(BitBoard *board){
+    if(board->wMoveMap == 0 || board->bMoveMap == 0)
+        board->GameContinue = 0;
+
+    else if(board->fiftyMoveRule == 50)
+        board->GameContinue = 0;
+
+    else if(__builtin_popcount((board->wPosition)) == 1 && 
+            __builtin_popcount((board->bPosition)) == 1)
+        board->GameContinue = 0;
+
+    else if(__builtin_popcount((board->wPosition)) == 1 && 
+            __builtin_popcount((board->bPosition)) == 2 && 
+            (__builtin_popcount((board->bKnight)) == 1 || 
+            __builtin_popcount((board->bBishop)) == 1))
+        board->GameContinue = 0;
+
+    else if(__builtin_popcount((board->bPosition)) == 1 && 
+            __builtin_popcount((board->wPosition)) == 2 && 
+            (__builtin_popcount((board->wKnight)) == 1 || 
+            __builtin_popcount((board->wBishop)) == 1))
+        board->GameContinue = 0;
+        
+    else if(__builtin_popcount((board->wPosition)) == 2 && 
+            __builtin_popcount((board->bPosition)) == 2 &&
+            __builtin_popcount((board->bBishop)) == 1 &&
+            __builtin_popcount((board->wBishop)) == 1 &&
+            __builtin_ctzll(board->wBishop) % 2 == __builtin_ctzll(board->bBishop) % 2)
+        board->GameContinue = 0;
 }
 
 void GameStateUpdater(BitBoard *board){
@@ -2452,6 +2488,8 @@ void GameStateUpdater(BitBoard *board){
     GenerateCheckMap(board);
     ClearIllegalMoves(board);
     CheckmateChecker(board);
+    if(board->GameContinue < 0)
+        DrawChecker(board);
 }
 
 #pragma endregion
