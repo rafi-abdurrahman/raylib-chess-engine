@@ -3,7 +3,7 @@
 BitBoard InitBoard(){
     BitBoard board;
     
-    // xING POSITIONS
+    // POSITIONS
     // White
     board.wPawn     = 65280ULL;
     board.wRook     = 129ULL;
@@ -16,7 +16,7 @@ BitBoard InitBoard(){
         board.wMoveMap[i][0] = 0ULL;
         board.wMoveMap[i][1] = 0ULL;
     }
-        // Black
+    // Black
     board.bPawn     = 71776119061217280ULL;
     board.bRook     = 9295429630892703744ULL;
     board.bKnight   = 4755801206503243776ULL;
@@ -43,6 +43,7 @@ BitBoard InitBoard(){
     board.GameContinue = 1;
     board.wCheckMap = 0ULL;
     board.bCheckMap = 0ULL;
+    board.doubleCheck = 0;
 
     return board;
 }
@@ -206,6 +207,7 @@ void PieceMove(BitBoard *board, int8_t x, int8_t target){
             CLEAR_BIT(board->wPosition, 0);
             SET_BIT(board->wPosition, 3);
         }
+        board->wCastled = 1;
     }
     else if(*Piece == board->bKing){
         if (target > x && target - x == 2){
@@ -221,6 +223,7 @@ void PieceMove(BitBoard *board, int8_t x, int8_t target){
             CLEAR_BIT(board->bPosition, 56);
             SET_BIT(board->bPosition, 59);
         }
+        board->bCastled = 1;
     }
     
     // Check and prompt if promotion
@@ -337,6 +340,14 @@ void PieceCapture(BitBoard *board, int8_t x, int8_t target)
         return;
     }
 
+    // Update castle situation
+    if(*Capturer == board->wKing){
+        board->wCastled = 1;
+    }
+    else if (*Capturer == board->bKing)
+    {
+        board->bCastled = 1;
+    }
     // char capturer = GetCurrentPiece(board, x);
     // char captured = GetCurrentPiece(board, target);
     // printf("Capturing... \n");
@@ -499,10 +510,9 @@ void GetPossibleMoves(BitBoard *board, int8_t square, bool isWhite)
             // Right
             if (square + 9 < 64 && (square + 9) % 8 == (square + 1) % 8 && square % 8 < 7)
             {           
+                SET_BIT(board->wMoveMap[0][0], square + 9);
                 if (IS_BIT(board->bPosition, square + 9)){
-                    
                     SET_BIT(board->wMoveMap[square + 1][1], square + 9);
-                    SET_BIT(board->wMoveMap[0][0], square + 9);
                 }
                 else if (IS_BIT(board->wPosition, square + 9)){
                     SET_BIT(board->wMoveMap[0][1], square + 9);
@@ -511,10 +521,10 @@ void GetPossibleMoves(BitBoard *board, int8_t square, bool isWhite)
             // Left
             if (square + 7 < 64 && (square + 7) % 8 == (square - 1) % 8 && square % 8 > 0)
             {
+                SET_BIT(board->wMoveMap[0][0], square + 7);
                 if (IS_BIT(board->bPosition, square + 7))
                 {
                     SET_BIT(board->wMoveMap[square + 1][1], square + 7);
-                    SET_BIT(board->wMoveMap[0][0], square + 7);
                 }
                 else if (IS_BIT(board->wPosition, square + 7))
                 {
@@ -1051,9 +1061,9 @@ void GetPossibleMoves(BitBoard *board, int8_t square, bool isWhite)
             // Right
             if (square >= 7 && (square - 7) % 8 == (square + 1) % 8 && square%8 < 7)
             {
+                SET_BIT(board->bMoveMap[0][0], square - 7);
                 if (IS_BIT(board->wPosition, square - 7)){
                     SET_BIT(board->bMoveMap[square + 1][1], square - 7);
-                    SET_BIT(board->bMoveMap[0][0], square - 7);
                 }
                 else if (IS_BIT(board->bPosition, square - 7)){
                     SET_BIT(board->bMoveMap[0][1], square - 7);
@@ -1062,10 +1072,10 @@ void GetPossibleMoves(BitBoard *board, int8_t square, bool isWhite)
             // Left
             if (square >= 9 && (square - 9) % 8 == (square - 1) % 8 && square % 8 > 0)
             {
+                SET_BIT(board->bMoveMap[0][0], square - 9);
                 if (IS_BIT(board->wPosition, square - 9))
                 {
                     SET_BIT(board->bMoveMap[square + 1][1], square - 9);
-                    SET_BIT(board->bMoveMap[0][0], square - 9);
                 }
                 else if (IS_BIT(board->bPosition, square - 9))
                 {
@@ -1624,6 +1634,7 @@ void GenerateMoveMap(BitBoard *board){
 void GenerateCheckMap(BitBoard *board){
     board->wCheckMap = 0ULL;
     board->bCheckMap = 0ULL;
+    int8_t checkCounter = 0;
 
     if (!AND_BIT(board->bMoveMap[0][0], board->wKing) &&
         !AND_BIT(board->wMoveMap[0][0], board->bKing))
@@ -1636,6 +1647,9 @@ void GenerateCheckMap(BitBoard *board){
             if (AND_BIT(board->bMoveMap[i][1], board->wKing))
             {
                 SET_BIT(board->wCheckMap, i-1);
+                checkCounter++;
+                if(IS_BIT(board->bKnight, i-1) || IS_BIT(board->bPawn, i-1))
+                    continue;
 
                 int8_t h = i-1 > wKingPos ? i-1 : wKingPos;
                 int8_t l = i-1 < wKingPos ? i-1 : wKingPos;
@@ -1647,6 +1661,18 @@ void GenerateCheckMap(BitBoard *board){
                     {
                         SET_BIT(board->wCheckMap, x);
                     }
+
+                    // Prevent king to walk in the line of check
+                    if(i > wKingPos && wKingPos >= 8){
+                        CLEAR_BIT(board->wMoveMap[wKingPos+1][0], wKingPos - 8);
+                        CLEAR_BIT(board->wMoveMap[wKingPos + 1][1], wKingPos - 8);
+                    }
+                    if(i < wKingPos && wKingPos < 56){
+                        CLEAR_BIT(board->wMoveMap[wKingPos+1][0], wKingPos + 8);
+                        CLEAR_BIT(board->wMoveMap[wKingPos + 1][1], wKingPos + 8);
+                    }
+
+
                     continue;
                 }
                 // if Rook or Queen (Horizontal)
@@ -1655,6 +1681,15 @@ void GenerateCheckMap(BitBoard *board){
                     for (int8_t x = l + 1; x < h; x++)
                     {
                         SET_BIT(board->wCheckMap, x);
+                    }
+                    // Prevent king to walk in the line of check
+                    if(i > wKingPos && wKingPos >= 1 && wKingPos % 8 > 0){
+                        CLEAR_BIT(board->wMoveMap[wKingPos + 1][0], wKingPos - 1);
+                        CLEAR_BIT(board->wMoveMap[wKingPos + 1][1], wKingPos - 1);
+                    }
+                    if(i < wKingPos && wKingPos < 63 && wKingPos % 8 < 7){
+                        CLEAR_BIT(board->wMoveMap[wKingPos + 1][0], wKingPos + 1);
+                        CLEAR_BIT(board->wMoveMap[wKingPos + 1][1], wKingPos + 1);
                     }
                     continue;
                 }
@@ -1665,16 +1700,41 @@ void GenerateCheckMap(BitBoard *board){
                     {
                         SET_BIT(board->wCheckMap, x);
                     }
+                    // Prevent king to walk in the line of check
+                    if (i > wKingPos && wKingPos >= 9 && wKingPos % 8 > 0){
+                        CLEAR_BIT(board->wMoveMap[wKingPos + 1][0], wKingPos - 9);
+                        CLEAR_BIT(board->wMoveMap[wKingPos + 1][1], wKingPos - 9);
+                    }
+                    if (i < wKingPos && wKingPos < 55 && wKingPos % 8 < 7){
+                        CLEAR_BIT(board->wMoveMap[wKingPos + 1][0], wKingPos + 9);
+                        CLEAR_BIT(board->wMoveMap[wKingPos + 1][1], wKingPos + 9);
+                    }
                     continue;
                 }
+                // if Bishop or Queen (Left)
                 if ((i-1 - wKingPos) % 7 == 0)
                 {
                     for (int8_t x = l + 7; x < h; x += 7)
                     {
                         SET_BIT(board->wCheckMap, x);
                     }
+                    // Prevent king to walk in the line of check
+                    if (i > wKingPos && wKingPos >= 7 && wKingPos % 8 < 7){
+                        CLEAR_BIT(board->wMoveMap[wKingPos + 1][0], wKingPos - 7);
+                        CLEAR_BIT(board->wMoveMap[wKingPos + 1][1], wKingPos - 7);
+                    }
+                    if (i < wKingPos && wKingPos < 57 && wKingPos % 8 > 0){
+                        CLEAR_BIT(board->wMoveMap[wKingPos + 1][0], wKingPos + 7);
+                        CLEAR_BIT(board->wMoveMap[wKingPos + 1][1], wKingPos + 7);
+                    }
                     continue;
                 }
+            }
+            
+            // if its a double check
+            if (checkCounter == 2){
+                board->doubleCheck = 1;
+                break;
             }
         }
     }
@@ -1687,6 +1747,10 @@ void GenerateCheckMap(BitBoard *board){
             if (AND_BIT(board->wMoveMap[i][1], board->bKing))
             {
                 SET_BIT(board->bCheckMap, i-1);
+                checkCounter++;
+
+                if (IS_BIT(board->wKnight, i - 1) || IS_BIT(board->wPawn, i - 1))
+                    continue;
 
                 int8_t h = i-1 > bKingPos ? i-1 : bKingPos;
                 int8_t l = i-1 < bKingPos ? i-1 : bKingPos;
@@ -1698,6 +1762,17 @@ void GenerateCheckMap(BitBoard *board){
                     {
                         SET_BIT(board->bCheckMap, x);
                     }
+                    // Prevent king to walk in the line of check
+                    if (i > bKingPos && bKingPos >= 8)
+                    {
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][0], bKingPos - 8);
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][1], bKingPos - 8);
+                    }
+                    if (i < bKingPos && bKingPos < 56)
+                    {
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][0], bKingPos + 8);
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][1], bKingPos + 8);
+                    }
                     continue;
                 }
                 // if Rook or Queen (Horizontal)
@@ -1706,6 +1781,17 @@ void GenerateCheckMap(BitBoard *board){
                     for (int8_t x = l + 1; x < h; x++)
                     {
                         SET_BIT(board->bCheckMap, x);
+                    }
+                    // Prevent king to walk in the line of check
+                    if (i > bKingPos && bKingPos >= 1 && bKingPos % 8 > 0)
+                    {
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][0], bKingPos - 1);
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][1], bKingPos - 1);
+                    }
+                    if (i < bKingPos && bKingPos < 63 && bKingPos % 8 < 7)
+                    {
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][0], bKingPos + 1);
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][1], bKingPos + 1);
                     }
                     continue;
                 }
@@ -1716,6 +1802,17 @@ void GenerateCheckMap(BitBoard *board){
                     {
                         SET_BIT(board->bCheckMap, x);
                     }
+                    // Prevent king to walk in the line of check
+                    if (i > bKingPos && bKingPos >= 9 && bKingPos % 8 > 0)
+                    {
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][0], bKingPos - 9);
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][1], bKingPos - 9);
+                    }
+                    if (i < bKingPos && bKingPos < 55 && bKingPos % 8 < 7)
+                    {
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][0], bKingPos + 9);
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][1], bKingPos + 9);
+                    }
                     continue;
                 }
                 if ((i-1 - bKingPos) % 7 == 0)
@@ -1723,9 +1820,26 @@ void GenerateCheckMap(BitBoard *board){
                     for (int8_t x = l + 7; x < h; x += 7)
                     {
                         SET_BIT(board->bCheckMap, x);
+                    } 
+                    // Prevent king to walk in the line of check
+                    if (i > bKingPos && bKingPos >= 7 && bKingPos % 8 < 7)
+                    {
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][0], bKingPos - 7);
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][1], bKingPos - 7);
+                    }
+                    if (i < bKingPos && bKingPos < 57 && bKingPos % 8 > 0)
+                    {
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][0], bKingPos + 7);
+                        CLEAR_BIT(board->bMoveMap[bKingPos + 1][1], bKingPos + 7);
                     }
                     continue;
                 }
+            }
+            // if its a double check
+            if (checkCounter == 2)
+            {
+                board->doubleCheck = 1;
+                break;
             }
         }
     }
@@ -1740,6 +1854,7 @@ void ClearIllegalMoves(BitBoard *board){
         // Clear king's illegal moves
         board->wMoveMap[wKingPos+1][1] &= ~(board->bMoveMap[0][1]); // king cannot capture protected pieces
         board->wMoveMap[wKingPos+1][0] &= ~(board->bMoveMap[0][0]); // king cannot move to a possible check square
+
         if (board->wCheckMap != 0 && !board->wCastled)
         {
             CLEAR_BIT(board->wMoveMap[wKingPos + 1][0], 2);
@@ -1751,38 +1866,50 @@ void ClearIllegalMoves(BitBoard *board){
             if(i-1 == wKingPos || !IS_BIT(board->wPosition, i-1))
                 continue;
             if(board->wCheckMap != 0){
-                
-                board->wMoveMap[i][0] &= board->wCheckMap;  // Remove any moves that is not to block check
-                board->wMoveMap[i][1] &= board->wCheckMap;  // Remove any captures that is not to stop check
+                if(!board->doubleCheck){
+                    board->wMoveMap[i][0] &= board->wCheckMap;  // Remove any moves that is not to block check
+                    board->wMoveMap[i][1] &= board->wCheckMap;  // Remove any captures that is not to stop check
+                }
+                else {
+                    board->wMoveMap[i][0] = 0ULL;
+                    board->wMoveMap[i][1] = 0ULL;
+                }
+                continue;
             }
             // Prevent piece protecting the king to be moved
-            if(IS_BIT(board->bMoveMap[0][0], i-1) && i == 12){
+            if(IS_BIT(board->bMoveMap[0][0], i-1)){
                 bool protecting = true;
+                uint64_t posMoves = 0ULL;
 
-                // Vertical
+                // Vertical 
                 if ((i - 1 - wKingPos) % 8 == 0)
                 {
                     if(i-1 > wKingPos){
-                        for (int8_t x = wKingPos + 8; x < i-1; x += 8)
+                            for (int8_t x = wKingPos + 8; x < i-1; x += 8)
                         {
                             if(IS_BIT(board->wPosition, x)){
                                 protecting = false;
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if(!protecting)
+                            continue;
+                        
                         for(int8_t x = i + 7; x < 64; x += 8){
+                            SET_BIT(posMoves, x);
                             // If the attacker is right above
                             if (IS_BIT(board->bRook, x) || IS_BIT(board->bQueen, x))
                             {
-                                temp = true;
+                                // Remove any moves that can cause check
+                                board->wMoveMap[i][0] &= posMoves;
+                                board->wMoveMap[i][1] &= posMoves;
+                                
                                 break;
                             }
                         }
-                        if(!temp)
-                            protecting = false;
                     }
                     else{
+                        bool protecting = true;
                         for (int8_t x = wKingPos - 8; x > i-1; x -= 8)
                         {
                             if (IS_BIT(board->wPosition, x))
@@ -1791,18 +1918,21 @@ void ClearIllegalMoves(BitBoard *board){
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if (!protecting)
+                            continue;
                         for (int8_t x = i - 9; x >= 0; x -= 8)
                         {
+                            SET_BIT(posMoves, x);
                             // If the attacker is right below
                             if (IS_BIT(board->bRook, x) || IS_BIT(board->bQueen, x))
                             {
-                                temp = true;
+                                // Remove any moves that can cause check
+                                board->wMoveMap[i][0] &= posMoves;
+                                board->wMoveMap[i][1] &= posMoves;
+
                                 break;
                             }
                         }
-                        if (!temp)
-                            protecting = false;
                     }
 
                 }
@@ -1820,18 +1950,21 @@ void ClearIllegalMoves(BitBoard *board){
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if(!protecting)
+                            continue;
                         for (int8_t x = i; x < (i / 8) * 8; x++)
                         {
+                            SET_BIT(posMoves, x);
                             // If the attacker is right above
                             if (IS_BIT(board->bRook, x) || IS_BIT(board->bQueen, x))
                             {
-                                temp = true;
+                                // Remove any moves that can cause check
+                                board->wMoveMap[i][0] &= posMoves;
+                                board->wMoveMap[i][1] &= posMoves;
+
                                 break;
                             }
                         }
-                        if (!temp)
-                            protecting = false;
                     }
                     else
                     {
@@ -1843,18 +1976,21 @@ void ClearIllegalMoves(BitBoard *board){
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if(!protecting)
+                            continue;
                         for (int8_t x = i - 2; x >= 0; x--)
                         {
+                            SET_BIT(posMoves, x);
                             // If the attacker is right above
                             if (IS_BIT(board->bRook, x) || IS_BIT(board->bQueen, x))
                             {
-                                temp = true;
+                                // Remove any moves that can cause check
+                                board->wMoveMap[i][0] &= posMoves;
+                                board->wMoveMap[i][1] &= posMoves;
+
                                 break;
                             }
                         }
-                        if (!temp)
-                            protecting = false;
                     }
                 }
                 
@@ -1867,22 +2003,27 @@ void ClearIllegalMoves(BitBoard *board){
                         {
                             if (IS_BIT(board->wPosition, x))
                             {
+                                
                                 protecting = false;
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if(!protecting)
+                            continue;
                         for (int8_t x = i + 8; x < 64; x += 9)
                         {
+                            SET_BIT(posMoves, x);
                             // If the attacker is right above
                             if (IS_BIT(board->bBishop, x) || IS_BIT(board->bQueen, x))
                             {
-                                temp = true;
+                                // Remove any moves that can cause check
+                                board->wMoveMap[i][0] &= posMoves;
+                                board->wMoveMap[i][1] &= posMoves;
+
                                 break;
                             }
                         }
-                        if (!temp)
-                            protecting = false;
+                        
                     }
                     else
                     {
@@ -1894,18 +2035,22 @@ void ClearIllegalMoves(BitBoard *board){
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if(!protecting)
+                            continue;
                         for (int8_t x = i - 10; x >= 0; x -= 9)
                         {
+                            SET_BIT(posMoves, x);
                             // If the attacker is right above
                             if (IS_BIT(board->bBishop, x) || IS_BIT(board->bQueen, x))
                             {
-                                temp = true;
+                                // Remove any moves that can cause check
+                                board->wMoveMap[i][0] &= posMoves;
+                                board->wMoveMap[i][1] &= posMoves;
+
                                 break;
                             }
                         }
-                        if (!temp)
-                            protecting = false;
+                        
                     }
                 }
                 
@@ -1922,18 +2067,22 @@ void ClearIllegalMoves(BitBoard *board){
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if(!protecting)
+                            continue;
                         for (int8_t x = i + 6; x < 64; x += 7)
                         {
+                            SET_BIT(posMoves, x);
                             // If the attacker is right above
                             if (IS_BIT(board->bBishop, x) || IS_BIT(board->bQueen, x))
                             {
-                                temp = true;
+                                // Remove any moves that can cause check
+                                board->wMoveMap[i][0] &= posMoves;
+                                board->wMoveMap[i][1] &= posMoves;
+
                                 break;
                             }
                         }
-                        if (!temp)
-                            protecting = false;
+                        
                     }
                     else
                     {
@@ -1945,29 +2094,22 @@ void ClearIllegalMoves(BitBoard *board){
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if(!protecting)
+                            continue;
                         for (int8_t x = i - 8; x >= 0; x -= 7)
                         {
+                            SET_BIT(posMoves, x);
                             // If the attacker is right above
                             if (IS_BIT(board->bBishop, x) || IS_BIT(board->bQueen, x))
                             {
-                                temp = true;
+                                // Remove any moves that can cause check
+                                board->wMoveMap[i][0] &= posMoves;
+                                board->wMoveMap[i][1] &= posMoves;
+
                                 break;
                             }
                         }
-                        if (!temp)
-                            protecting = false;
                     }
-                }
-
-                else
-                {
-                    protecting = false;
-                }
-
-                if(protecting){
-                    board->wMoveMap[i][0] = 0ULL;
-                    board->wMoveMap[i][1] = 0ULL;
                 }
             }
 
@@ -1975,7 +2117,7 @@ void ClearIllegalMoves(BitBoard *board){
         }
     }
     
-    else
+    else    
     {
         int8_t bKingPos = __builtin_ctzll(board->bKing);
         // Clear king's illegal moves
@@ -1997,19 +2139,27 @@ void ClearIllegalMoves(BitBoard *board){
                 continue;
 
             if(board->bCheckMap != 0){
-                board->bMoveMap[i][0] &= board->bCheckMap;  // Remove any moves that is not to block check
-                board->bMoveMap[i][1] &= board->bCheckMap;  // Remove any captures that is not to stop check
+                if (!board->doubleCheck)
+                {
+                    board->wMoveMap[i][0] &= board->wCheckMap; // Remove any moves that is not to block check
+                    board->wMoveMap[i][1] &= board->wCheckMap; // Remove any captures that is not to stop check
+                }
+                else
+                {
+                    board->wMoveMap[i][0] = 0ULL;
+                    board->wMoveMap[i][1] = 0ULL;
+                }
             }
 
             if (IS_BIT(board->wMoveMap[0][0], i - 1))
             {
                 bool protecting = true;
+                uint64_t posMoves = 0ULL;
 
                 // Vertical
                 if ((i - 1 - bKingPos) % 8 == 0)
                 {
-                    if(i == 60)
-                        printf("im in vertical!\n");
+
                     if (i - 1 > bKingPos)
                     {
                         for (int8_t x = bKingPos + 8; x < i - 1; x += 8)
@@ -2020,18 +2170,22 @@ void ClearIllegalMoves(BitBoard *board){
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if(!protecting)
+                            continue;
                         for (int8_t x = i + 7; x < 64; x += 8)
                         {
+                            SET_BIT(posMoves, x);
                             // If the attacker is right above
                             if (IS_BIT(board->wRook, x) || IS_BIT(board->wQueen, x))
                             {
-                                temp = true;
+                                // Remove any moves that can cause check
+                                board->bMoveMap[i][0] &= posMoves;
+                                board->bMoveMap[i][1] &= posMoves;
+
                                 break;
                             }
                         }
-                        if (!temp)
-                            protecting = false;
+                        
                     }
                     else
                     {
@@ -2043,18 +2197,22 @@ void ClearIllegalMoves(BitBoard *board){
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if(!protecting)
+                            continue;
                         for (int8_t x = i - 9; x >= 0; x -= 8)
                         {
+                            SET_BIT(posMoves, x);
                             // If the attacker is right above
                             if (IS_BIT(board->wRook, x) || IS_BIT(board->wQueen, x))
                             {
-                                temp = true;
+                                // Remove any moves that can cause check
+                                board->bMoveMap[i][0] &= posMoves;
+                                board->bMoveMap[i][1] &= posMoves;
+
                                 break;
                             }
                         }
-                        if (!temp)
-                            protecting = false;
+                        
                     }
                 }
 
@@ -2073,18 +2231,21 @@ void ClearIllegalMoves(BitBoard *board){
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if(!protecting)
+                            continue;
                         for (int8_t x = i; x < (i/8) * 8 ; x++)
                         {
+                            SET_BIT(posMoves, x);
                             // If the attacker is right above
                             if (IS_BIT(board->wRook, x) || IS_BIT(board->wQueen, x))
                             {
-                                temp = true;
+                                // Remove any moves that can cause check
+                                board->bMoveMap[i][0] &= posMoves;
+                                board->bMoveMap[i][1] &= posMoves;
+
                                 break;
                             }
                         }
-                        if (!temp)
-                            protecting = false;
                     }
                     else
                     {
@@ -2096,18 +2257,20 @@ void ClearIllegalMoves(BitBoard *board){
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if(!protecting)
+                            continue;
                         for (int8_t x = i - 2; x >= 0; x--)
                         {
                             // If the attacker is right above
                             if (IS_BIT(board->wRook, x) || IS_BIT(board->wQueen, x))
                             {
-                                temp = true;
+                                // Remove any moves that can cause check
+                                board->bMoveMap[i][0] &= posMoves;
+                                board->bMoveMap[i][1] &= posMoves;
+
                                 break;
                             }
                         }
-                        if (!temp)
-                            protecting = false;
                     }
 
                     
@@ -2128,17 +2291,21 @@ void ClearIllegalMoves(BitBoard *board){
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if(!protecting)
+                            continue;
                         for (int8_t x = i + 8; x < 64; x += 9)
                         {
+                            SET_BIT(posMoves, x);
                             // If the attacker is right above
                             if (IS_BIT(board->wBishop, x) || IS_BIT(board->wQueen, x))
                             {
-                                temp = true;
+                                // Remove any moves that can cause check
+                                board->bMoveMap[i][0] &= posMoves;
+                                board->bMoveMap[i][1] &= posMoves;
+
+                                break;
                             }
                         }
-                        if (!temp)
-                            protecting = false;
                     }
                     else
                     {
@@ -2150,26 +2317,31 @@ void ClearIllegalMoves(BitBoard *board){
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if(!protecting)
+                            continue;
                         for (int8_t x = i - 10; x >= 0; x -= 9)
                         {
                             // If the attacker is right above
                             if (IS_BIT(board->wBishop, x) || IS_BIT(board->wQueen, x))
                             {
-                                temp = true;
-                                break;
+                                SET_BIT(posMoves, x);
+                                // If the attacker is right above
+                                if (IS_BIT(board->wBishop, x) || IS_BIT(board->wQueen, x))
+                                {
+                                    // Remove any moves that can cause check
+                                    board->bMoveMap[i][0] &= posMoves;
+                                    board->bMoveMap[i][1] &= posMoves;
+
+                                    break;
+                                }
                             }
                         }
-                        if (!temp)
-                            protecting = false;
                     }
                 }
 
                 // Diagonal Left
                 else if ((i - 1 - bKingPos) % 7 == 0)
                 {
-                    if (i == 60)
-                        printf("im in diag left!\n");
                     if (i - 1 > bKingPos)
                     {
                         for (int8_t x = bKingPos + 7; x < i - 1; x += 7)
@@ -2180,17 +2352,25 @@ void ClearIllegalMoves(BitBoard *board){
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if(!protecting)
+                            continue;
                         for (int8_t x = i + 6; x < 64; x += 7)
                         {
                             // If the attacker is right above
                             if (IS_BIT(board->wBishop, x) || IS_BIT(board->wQueen, x))
                             {
-                                temp = true;
+                                SET_BIT(posMoves, x);
+                                // If the attacker is right above
+                                if (IS_BIT(board->wBishop, x) || IS_BIT(board->wQueen, x))
+                                {
+                                    // Remove any moves that can cause check
+                                    board->bMoveMap[i][0] &= posMoves;
+                                    board->bMoveMap[i][1] &= posMoves;
+
+                                    break;
+                                }
                             }
                         }
-                        if (!temp)
-                            protecting = false;
                     }
                     else
                     {
@@ -2202,30 +2382,27 @@ void ClearIllegalMoves(BitBoard *board){
                                 break;
                             }
                         }
-                        bool temp = false;
+                        if(!protecting)
+                            continue;
                         for (int8_t x = i - 8; x >= 0; x -= 7)
                         {
                             // If the attacker is right above
                             if (IS_BIT(board->wBishop, x) || IS_BIT(board->wQueen, x))
                             {
-                                temp = true;
+                                SET_BIT(posMoves, x);
+                                // If the attacker is right above
+                                if (IS_BIT(board->wBishop, x) || IS_BIT(board->wQueen, x))
+                                {
+                                    // Remove any moves that can cause check
+                                    board->bMoveMap[i][0] &= posMoves;
+                                    board->bMoveMap[i][1] &= posMoves;
+
+                                    break;
+                                }
                             }
                         }
-                        if (!temp)
-                            protecting = false;
                     }
                 }
-
-                else{
-                    protecting = false;
-                }
-
-                if (protecting)
-                {
-                    board->bMoveMap[i][0] = 0ULL;
-                    board->bMoveMap[i][1] = 0ULL;
-                }
-            
             }
 
             board->bMoveMap[0][0] |= board->bMoveMap[i][0] | board->bMoveMap[i][1]; // Add back moves after removing
@@ -2270,6 +2447,7 @@ void GameStateUpdater(BitBoard *board){
         return;
     }
     board->playerTurn = !board->playerTurn;
+    board->doubleCheck = 0;
     GenerateMoveMap(board);
     GenerateCheckMap(board);
     ClearIllegalMoves(board);

@@ -82,6 +82,7 @@ typedef struct BitBoard
     bool GameContinue;
     uint64_t wCheckMap;
     uint64_t bCheckMap;
+    bool doubleCheck;
 } BitBoard;
 
 BitBoard InitBoard(); // Initialize starting positions
